@@ -215,6 +215,8 @@ public class Analyzer
               ParseChars("==")
            || ParseChars("<=")
            || ParseChars(">=")
+           || ParseChars("&&")
+           || ParseChars("||")
            || ParseChars("<")
            || ParseChars(">")
            )
@@ -224,6 +226,12 @@ public class Analyzer
         else if (
               ParseChars("++")
            || ParseChars("--")
+           )
+        {
+            ;
+        }
+        else if (
+              ParseChars("!")
            )
         {
             ;
