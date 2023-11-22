@@ -5,11 +5,12 @@ namespace SyntaxAnalyze;
 public class Analyzer
 {
     private static readonly char[] BlankSymbols = { ' ', '\n', '\t', '\r' };
+    private static readonly char[] EscapedSymbols = { 'n', 't', 'r', '\\', '\'' };
     private const string SingleLineComment = "//";
 
     private readonly string expression;
     private int position;
-    private readonly Dictionary<string, ParseResult> variables = new ();
+    private readonly Dictionary<string, ParseResult> variables = new();
 
     public Analyzer(string expression)
     {
@@ -67,7 +68,7 @@ public class Analyzer
         {
             throw new InvalidOperationException();
         }
-        
+
         var expressionType = parseResult.Type;
 
         while (expression.Length >= position)
@@ -120,19 +121,53 @@ public class Analyzer
         }
     }
 
+    private char CurrentChar()
+    {
+        return expression[position];
+    }
+
     private bool ParseString()
     {
         SkipBlanks();
 
-        if (!ParseChar('\''))
+        bool Escape = true;
+
+        if (ParseChar('@'))
         {
-            return false;
+            Escape = false;
+
+            if (!ParseChar('\''))
+            {
+                throw new InvalidOperationException();
+            }
+        }
+        else
+        {
+            if (!ParseChar('\''))
+            {
+                return false;
+            }
         }
 
-        while (!EndCode())
+        int pos1 = position;
+
+        while (!EndCode()) // don't use ParseChar() or SkipBlanks() here, they skip comments!
         {
-            if (ParseChar('\''))
+            if (Escape && CurrentChar() == '\\')
             {
+                position++;
+
+                if (position >= expression.Length)
+                    throw new InvalidOperationException();
+
+                if (!EscapedSymbols.Contains(CurrentChar()))
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+            else if (CurrentChar() == '\'')
+            {
+                position++;
                 return true;
             }
 
@@ -147,9 +182,9 @@ public class Analyzer
     {
         var parseResult = new ParseResult();
 
-        var (variable, name) = ParseVariable();
-        
-        if (!variable || name == null)
+        string? name = ParseVariable();
+
+        if (name == null)
         {
             return false;
         }
@@ -176,15 +211,46 @@ public class Analyzer
 
     private bool ParseOperation()
     {
-        SkipBlanks();
-
-        if (position < expression.Length && Validators.IsOperator(expression[position]))
+        if (
+              ParseChars("==")
+           || ParseChars("<=")
+           || ParseChars(">=")
+           || ParseChars("<")
+           || ParseChars(">")
+           )
         {
-            position++;
-            return true;
+            ;
         }
+        else if (
+              ParseChars("++")
+           || ParseChars("--")
+           )
+        {
+            ;
+        }
+        else if (
+              ParseChars("+")
+           || ParseChars("-")
+           || ParseChars("*")
+           || ParseChars("/")
+           || ParseChars("%")
+           )
+        {
+            ;
+        }
+        else
+        {
+            return false;
+        }
+        return true;
 
-        return false;
+        //SkipBlanks();
+        //if (position < expression.Length && Validators.IsOperation(expression[position]))
+        //{
+        //    position++;
+        //    return true;
+        //}
+        //return false;
     }
 
     private bool ParseOperand(ParseResult parseResult)
@@ -200,8 +266,7 @@ public class Analyzer
 
             return true;
         }
-        
-        
+
         if (ParseString())
         {
             parseResult.Type = ExpressionType.Str;
@@ -214,16 +279,15 @@ public class Analyzer
             return true;
         }
 
-        var (variable, str) = ParseVariable();
+        string? str = ParseVariable();
 
-        if (variable && str != null)
+        if (str == null)
         {
-            var parseResultRhs = GetVar(str);
-            parseResult.Type = parseResultRhs.Type;
-            return true;
+            throw new InvalidOperationException();
         }
-
-        throw new InvalidOperationException();
+        var parseResultRhs = GetVar(str);
+        parseResult.Type = parseResultRhs.Type;
+        return true;
     }
 
     private bool ParseChar(char symbol)
@@ -239,17 +303,30 @@ public class Analyzer
         return false;
     }
 
-    private (bool, string?) ParseVariable()
+    private bool ParseChars(string str)
+    {
+        SkipBlanks();
+
+        if (position < expression.Length && expression[position..].StartsWith(str))
+        {
+            position += str.Length;
+            return true;
+        }
+
+        return false;
+    }
+
+    private string? ParseVariable()
     {
         SkipBlanks();
         if (position >= expression.Length)
         {
-            return (false, null);
+            return null;
         }
 
         if (!char.IsAscii(expression[position]) && expression[position] != '_')
         {
-            return (false, null);
+            return null;
         }
 
         int p1 = position;
@@ -260,7 +337,8 @@ public class Analyzer
             position++;
         }
 
-        return (true, expression.Substring(p1, position - p1));
+        string v = expression[p1..position];
+        return v;
     }
 
     private ParseResult GetVar(string name)
