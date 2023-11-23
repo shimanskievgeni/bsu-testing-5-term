@@ -88,6 +88,23 @@ public class Tests
     [TestCase("24 + (3\n\r * 6)", true)]
     [TestCase("24 \t + \r\n (3 + (5 * 4) * 4 - 4 * (2 + 3))", true)]
     [TestCase("24 + (3 + (5 * 4) * 4 - 4 * (2 + 3))", true)]
+    [TestCase("2 > 1", true)]
+    [TestCase("2 == 2", true)]
+    [TestCase("(1+1) == (1+1)", true)]
+    [TestCase("(1+11) >= (1+1)", true)]
+    [TestCase("(1+1) <(1+0)", true)]
+    [TestCase("(1+1) <(1+0) && 2==2", true)]
+    [TestCase("(1==1) || (2==2)", true)]
+    [TestCase("(1==1) || 2==2", true)]
+    [TestCase("1==1 || 2==2", true)]
+    [TestCase("!(1==1)", true)]
+    [TestCase("1!=1", true)]
+    [TestCase("-1", true)]
+    [TestCase("-(1+1)", true)]
+    [TestCase("-(-1)", true)]
+    [TestCase("-(-(1+1))", true)]
+    [TestCase("1-(-(1+1))", true)]
+    [TestCase("1-(-(1+1))-1", true)]
     public void ValidatesExpression(string expression, bool expected)
 
     {
@@ -96,6 +113,7 @@ public class Tests
 
         Assert.That(actual, Is.EqualTo(expected));
     }
+
 
     [TestCase(
         """
@@ -128,6 +146,28 @@ public class Tests
     [TestCase("24 + 3y,3")]
     [TestCase("24 + 1_2x + (x_*_y)")]
     [TestCase("24 + 12x + (x_*_y)")]
+    [TestCase("! ")]
+    [TestCase(" 1! ")]
+    [TestCase(" !1! ")]
+    [TestCase(" (1+1)! ")]
+    [TestCase(" !(1+1)! ")]
+    [TestCase(" !! ")]
+    [TestCase(" !+ ")]
+    [TestCase(" !-1 ")]
+    [TestCase(" -! ")]
+    [TestCase(" -- ")]
+    [TestCase(" -1- ")]
+    [TestCase(" --- ")]
+    [TestCase(" --! ")]
+    [TestCase(" !-- ")]
+    // no static type analyzing
+    //[TestCase("2 > '3' ")]
+    //[TestCase("1 < '1' ")]
+    //[TestCase("2 + '3' ")]
+    //[TestCase("2 + (1==1) ")]
+    //[TestCase("(1+1) + (1==1) ")]
+    //[TestCase("1 > (1==1) ")]
+    //[TestCase("!'1'")]
     public void ThrowsException(string expression)
     {
         var parser = new SyntaxAnalyze.Analyzer(expression);
@@ -160,11 +200,12 @@ public class Tests
         """
         x= 'a;
         """)]
-    [TestCase(
-        """
-        x= 'bcd';
-        y= x + 1;
-        """)]
+    // no checking dynamic types
+    //[TestCase(
+    //    """
+    //    x= 'bcd';
+    //    y= x + 1;
+    //    """)]
     public void ParseThrowsException(string expression)
     {
         var parser = new SyntaxAnalyze.Analyzer(expression);

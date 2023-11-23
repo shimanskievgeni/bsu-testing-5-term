@@ -4,17 +4,24 @@ public class ParseResult
 {
     public ParseResult()
     {
-        this.Name = "Undefined";
+        this.Name = null;
     }
-    
-    public ParseResult(string name, ExpressionType type, double value)
+
+    public ParseResult(string name)
+    {
+        this.Name = name;
+        this.Type = ExpressionType.Undefined;
+    }
+
+    public ParseResult(string? name, ExpressionType type, double? value, string? operation)
     {
         this.Name = name;
         this.Type = type;
         this.Value = value;
+        this.Operation = operation;
     }
 
-    public string Name
+    public string? Name
     {
         get;
         set;
@@ -26,7 +33,13 @@ public class ParseResult
         set;
     }
 
-    public double Value
+    public double? Value
+    {
+        get;
+        set;
+    }
+
+    public string? Operation
     {
         get;
         set;
@@ -34,6 +47,6 @@ public class ParseResult
 
     public ParseResult Clone()
     {
-        return new ParseResult(this.Name, this.Type, this.Value);
+        return new ParseResult(this.Name, this.Type, this.Value, this.Operation);
     }
 }

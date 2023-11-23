@@ -47,7 +47,6 @@ public class Analyzer
 
     public bool IsValidExpression()
     {
-
         position = 0;
 
         ParseExpression();
@@ -62,14 +61,19 @@ public class Analyzer
 
 
 
-    private bool ParseExpression(ParseResult parseResult)
+    private bool ParseExpression()
     {
-        if (!ParseOperand(parseResult))
+        if (ParseUnaryOperation())
         {
-            throw new InvalidOperationException();
+            if (!ParseOperand())
+            {
+                throw new InvalidOperationException();
+            }
         }
-
-        var expressionType = parseResult.Type;
+        else if (!ParseOperand())
+        {  
+            return false; 
+        }
 
         while (expression.Length >= position)
         {
@@ -78,24 +82,13 @@ public class Analyzer
                 return false;
             }
 
-            if (!ParseOperand(parseResult))
-            {
-                throw new InvalidOperationException();
-            }
-
-            if (parseResult.Type != expressionType)
+            if (!ParseOperand())
             {
                 throw new InvalidOperationException();
             }
         }
 
         return true;
-    }
-
-    private bool ParseExpression()
-    {
-        var parseResult = new ParseResult();
-        return ParseExpression(parseResult);
     }
 
     private void SkipBlanks()
@@ -180,7 +173,7 @@ public class Analyzer
 
     private bool ParseAssigment()
     {
-        var parseResult = new ParseResult();
+        
 
         string? name = ParseVariable();
 
@@ -189,30 +182,50 @@ public class Analyzer
             return false;
         }
 
-        parseResult.Name = name;
-
         if (!ParseChar('='))
         {
             return false;
         }
 
-        ParseExpression(parseResult);
+        ParseExpression();
 
         if (!ParseChar(';'))
         {
             throw new InvalidOperationException();
         }
 
-        AddVar(parseResult);
+        AddVar(name);
 
         return true;
 
     }
 
-    private bool ParseOperation()
+    private bool ParseUnaryOperation()
     {
+        SkipBlanks();
+        int p1 = position;
+        if (
+              ParseChars("!")
+           || ParseChars("-")
+           )
+        {
+            ;
+        }
+        else
+        {
+            return false;
+        }
+        var operation = expression[p1..position];
+        return true;
+    }
+
+        private bool ParseOperation() // Binary
+    {
+        SkipBlanks();
+        int p1 = position;
         if (
               ParseChars("==")
+           || ParseChars("!=")
            || ParseChars("<=")
            || ParseChars(">=")
            || ParseChars("&&")
@@ -223,19 +236,13 @@ public class Analyzer
         {
             ;
         }
-        else if (
-              ParseChars("++")
-           || ParseChars("--")
-           )
-        {
-            ;
-        }
-        else if (
-              ParseChars("!")
-           )
-        {
-            ;
-        }
+        //else if (
+        //      ParseChars("++")
+        //   || ParseChars("--")
+        //   )
+        //{
+        //    ;
+        //}
         else if (
               ParseChars("+")
            || ParseChars("-")
@@ -250,6 +257,7 @@ public class Analyzer
         {
             return false;
         }
+        var operation = expression[p1..position];
         return true;
 
         //SkipBlanks();
@@ -261,11 +269,73 @@ public class Analyzer
         //return false;
     }
 
-    private bool ParseOperand(ParseResult parseResult)
+    private static ExpressionType ResultingOperationType(string operation, ExpressionType type1, ExpressionType type2)
+    {
+        if (type1 == type2)
+        {
+            if (operation == "=="
+             || operation == "!="
+             || operation == "<="
+             || operation == ">="
+             || operation == "<"
+             || operation == ">"
+                )
+            {
+                return ExpressionType.Bool;
+            }
+             
+            if (operation == "+") // plus or string concat   
+            {
+                return type1;
+            }
+        }
+
+        if (type1 == ExpressionType.Num)
+        {
+            if (operation == "++" || operation == "--")
+            {
+                return type1;
+            }
+
+            if (type2 == ExpressionType.Num)
+            {
+                if (   operation == "+"
+                    || operation == "-"
+                    || operation == "*"
+                    || operation == "/"
+                    || operation == "%"
+                    )
+                {
+                    return type1;
+                }
+            }
+        }
+
+        if (type1 == ExpressionType.Bool)
+        {   
+            if (operation == "!")
+            {
+                return type1;
+            }
+            if (type2 == ExpressionType.Bool)
+            {
+                if (operation == "&&" || operation == "||")
+                {
+                    return type1;
+                }
+            }
+        }
+        
+        throw new InvalidOperationException();
+    }
+
+
+
+    private bool ParseOperand()
     {
         if (ParseChar('('))
         {
-            ParseExpression(parseResult);
+            ParseExpression();
 
             if (!ParseChar(')'))
             {
@@ -277,24 +347,28 @@ public class Analyzer
 
         if (ParseString())
         {
-            parseResult.Type = ExpressionType.Str;
+            //Type = ExpressionType.Str;
             return true;
         }
 
         if (ParseNumber())
         {
-            parseResult.Type = ExpressionType.Num;
+            //Type = ExpressionType.Num;
             return true;
         }
 
-        string? str = ParseVariable();
+        string? varName = ParseVariable();
 
-        if (str == null)
+        if (varName == null)
         {
             throw new InvalidOperationException();
         }
-        var parseResultRhs = GetVar(str);
-        parseResult.Type = parseResultRhs.Type;
+        
+        if (GetVar(varName) == null)
+        {
+            throw new InvalidOperationException();
+        }
+
         return true;
     }
 
@@ -332,15 +406,15 @@ public class Analyzer
             return null;
         }
 
-        if (!char.IsAscii(expression[position]) && expression[position] != '_')
+        if (!char.IsLetterOrDigit(expression[position]) && expression[position] != '_')
         {
             return null;
         }
 
-        int p1 = position;
+        var p1 = position;
         position++;
 
-        while (position < expression.Length && IsValidVariableSymbol())
+        while (position < expression.Length && (char.IsLetterOrDigit(expression[position]) || expression[position] == '_')) // IsValidVariableSymbol())
         {
             position++;
         }
@@ -355,9 +429,9 @@ public class Analyzer
     }
 
 
-    private void AddVar(ParseResult parseResult)
+    private void AddVar(string name)
     {
-        variables.TryAdd(parseResult.Name, parseResult.Clone());
+        variables.TryAdd(name, new ParseResult(name));
     }
 
     private bool IsValidVariableSymbol()
