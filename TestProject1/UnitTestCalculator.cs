@@ -76,12 +76,26 @@ public class Tests
         
         Assert.That(actual, Is.EqualTo(expected));
     }
+
     
+    //[TestCase("2 * (1 + 3) *    ")]
+    //[TestCase("4 - (2 + 3 * 5   ")]
+    //[Test, Category("Negative scenario")]
+    //public void CalculatorReturnNaN(string expression)
+    //{
+    //    double actual = Calculator.Compute(expression);
+    //    Assert.That(actual, Is.EqualTo(double.NaN));
+    //}
+
+    [TestCase("2 * (1 + 3) *   ")]
+    [TestCase("4 - (2 + 3 * 5  ")]
+    [TestCase("2 & 4 - 5       ")]
+    [TestCase("+ - * /         ")]
+    //[TestCase("1 2 +           ")]
+    [TestCase("1 + ( ) *)      ")]
     [Test, Category("Negative scenario")]
-    public void ThrowsWithInvalidOperator()
+    public void ThrowsWithInvalidOperator(string expression)
     {
-        string expression = "2 & 4 - 5";
-       
         Assert.Throws<InvalidOperationException>(() => Calculator.Compute(expression), "Operators must be +, -, * or / only."); 
     }
     

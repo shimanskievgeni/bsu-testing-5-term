@@ -74,7 +74,20 @@ public static class Calculator
 
             operands.Push(Operate(val1, val2, op));
         }
-        
+
+        if (operators.Count != 0)
+        {
+            char op = operators.Pop();
+            throw new InvalidOperationException($"operators stack is not empty at the end: {op}");
+            //return double.NaN;
+        }
+
+        if (operands.Count > 1)
+        {
+            double op = operands.Pop();
+            throw new InvalidOperationException($"operands stack is not empty at the end: {op}");
+            //return double.NaN;
+        }
 
         return operands.Pop();
     }
