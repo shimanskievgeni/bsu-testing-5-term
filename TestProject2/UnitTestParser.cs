@@ -1,6 +1,6 @@
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace TestProject2;
+namespace TestParser;
 
 public class Tests
 {

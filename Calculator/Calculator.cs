@@ -2,11 +2,6 @@
 
 public static class Calculator
 {
-    /// <summary>
-    /// Compute the result of the expression
-    /// </summary>
-    /// <param name="source">expression to be computed</param>
-    /// <returns>The result of expression</returns>
     public static double Compute(string source)
     {
         Stack<double> operands = new();
@@ -84,16 +79,7 @@ public static class Calculator
         return operands.Pop();
     }
     
-    /// <summary>
-    /// Operate two numbers with the given operator
-    /// </summary>
-    /// <param name="left">left number of operation</param>
-    /// <param name="right">right number of operation</param>
-    /// <param name="op">operation to be applied</param>
-    /// <returns>Result of given operation</returns>
-    /// <exception cref="DivideByZeroException">If operation is division and right part is 0.</exception>
-    /// <exception cref="InvalidOperationException">If operator is not +, -, * or /.</exception>
-    private static double Operate(double left, double right, char op) =>
+     private static double Operate(double left, double right, char op) =>
         op switch
         {
             '+' => left + right,
@@ -107,12 +93,7 @@ public static class Calculator
             _ => throw new InvalidOperationException($"Invalid operator: {op}")
         };
     
-    /// <summary>
-    /// Get the priority of the given operation
-    /// </summary>
-    /// <param name="operation">Operation to be mapped to priority</param>
-    /// <returns>Priority of operation</returns>
-    private static int GetOperationPriority(char operation) =>
+     private static int GetOperationPriority(char operation) =>
         operation switch
         {
             '+' or '-' => 1,

@@ -66,7 +66,7 @@ public class Analyzer
         }
         catch (ParserException _)
         {
-            LogError(Error);
+            LogError(Error?? "");
             return false;
         }
     }

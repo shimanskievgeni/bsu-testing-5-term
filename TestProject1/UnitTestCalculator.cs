@@ -1,4 +1,4 @@
-namespace TestProject1;
+namespace TestCalculator;
 
 using Calculator;
 
