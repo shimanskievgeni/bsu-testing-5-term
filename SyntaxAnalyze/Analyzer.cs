@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using System.Xml.Linq;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace SyntaxAnalyze;
 
@@ -10,7 +12,9 @@ public class Analyzer
 
     private readonly string expression;
     private int position;
-    private readonly Dictionary<string, ParseResult> variables = new();
+    private readonly Dictionary<string, VariableDef> variables = new();
+    private readonly Dictionary<string, FuncDef> functions = new();
+    private string? _funcName;
 
     public Analyzer(string expression)
     {
@@ -21,7 +25,54 @@ public class Analyzer
     public bool Parse()
     {
         position = 0;
+        _funcName = null;
 
+        bool f;
+
+        // declare global vars
+        do 
+        {
+            f = ParseVar();
+        }
+        while (f);
+
+        do
+        {
+            f = ParseFunction();
+        }
+        while (f);
+
+        // top level statements
+        ParseOperators();
+        
+        f = EndCode();
+        return f;
+    }
+
+    public bool ParseVar()
+    {
+        if (!ParseWordAndBlank("var"))
+        {
+            return false;
+        }
+
+        do
+        {
+            if (!ParseAssigment(true))
+            {
+                throw new InvalidOperationException();
+            }
+        } while (ParseChar(','));
+
+        if (!ParseChar(';'))
+        {
+            throw new InvalidOperationException();
+        }
+        return true;
+    }
+
+    public bool ParseOperators()
+    {
         bool f;
 
         do
@@ -34,6 +85,123 @@ public class Analyzer
         return f;
     }
 
+
+    private bool ParseFunction()
+    {
+        SkipBlanks();
+        if (!ParseWordAndBlank("function"))
+        {
+            return false;
+        }
+
+        ParseFunctionHeader();
+        if (!ParseChar('{'))
+        {
+            throw new InvalidOperationException();
+        }
+
+        ParseOperators();
+
+        if (!ParseChar('}'))
+        {
+            throw new InvalidOperationException();
+        }
+        _funcName = null;
+
+        return true;
+    }
+
+    private int ParseFunctionHeader()
+    {
+        /*
+        var func = GetVar(funcName);
+        if (func.Operation != "func")
+        {
+            return false;
+        }
+        */
+
+        string? funcName = ParseVariable();
+        if (funcName == null)
+        {
+            throw new InvalidOperationException();
+        }
+        _funcName = funcName;
+
+        if (!ParseChar('('))
+        {
+            throw new InvalidOperationException();
+        }
+
+        AddFunc(_funcName);
+
+        int argcount = 0;
+        string? name;
+
+        if (!ParseChar(')'))
+        {
+            do
+            {
+                name = ParseVariable();
+                if (name == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                AddFuncVar(name, funcName);
+
+                argcount++;
+
+            } while (ParseChar(','));
+        }
+
+        if (!ParseChar(')'))
+        {
+            throw new InvalidOperationException();
+        }
+        return argcount;
+    }
+
+    private void AddFunc(string name)
+    {
+        functions.TryAdd(name, new FuncDef(name));
+    }
+
+    private FuncDef GetFunc(string name)
+    {
+        return functions[name];
+    }
+
+    private void AddVar(string name, string? funcName = null)
+    {
+        if (funcName == null)
+            variables.TryAdd(name, new VariableDef(name));
+        else
+            AddFuncVar(name, funcName);
+    }
+
+    private void AddFuncVar(string name, string funcName)
+    {
+        var localVars = functions[funcName].localVariables;  // functions.TryGetValue(funcName, out _);
+        localVars.TryAdd(name, new VariableDef(name));
+    }
+
+    private VariableDef GetVar(string name, string? funcName)
+    {
+        if (funcName == null)
+            return variables[name];
+        else
+        {
+            var localVars = functions[funcName].localVariables;  // functions.TryGetValue(funcName, out _);
+            if (localVars.TryGetValue(name, out VariableDef? v))
+                return v;
+            else
+                return variables[name];
+        }
+    }
+
+
+    //-------------------------------------------------------
     private bool EndCode()
     {
         SkipBlanks();
@@ -116,7 +284,10 @@ public class Analyzer
 
     private char CurrentChar()
     {
-        return expression[position];
+        if (position < expression.Length)
+            return expression[position];
+        else 
+            return '\0';
     }
 
     private bool ParseString()
@@ -171,10 +342,9 @@ public class Analyzer
     }
 
 
-    private bool ParseAssigment()
+    // is used also in var declaration
+    private bool ParseAssigment(bool varOnly = false)
     {
-        
-
         string? name = ParseVariable();
 
         if (name == null)
@@ -184,22 +354,29 @@ public class Analyzer
 
         if (!ParseChar('='))
         {
+            if (varOnly)
+            {
+                AddVar(name, _funcName);
+                return true;
+            }
             return false;
         }
 
         ParseExpression();
 
-        if (!ParseChar(';'))
+        if (!varOnly && !ParseChar(';'))
         {
             throw new InvalidOperationException();
         }
 
-        AddVar(name);
+        AddVar(name, _funcName);
 
         return true;
-
     }
 
+
+
+    //--------------------------------------------------
     private bool ParseUnaryOperation()
     {
         SkipBlanks();
@@ -330,7 +507,6 @@ public class Analyzer
     }
 
 
-
     private bool ParseOperand()
     {
         if (ParseChar('('))
@@ -357,19 +533,67 @@ public class Analyzer
             return true;
         }
 
-        string? varName = ParseVariable();
+        string? name = ParseVariable();
 
-        if (varName == null)
+        if (name == null)
         {
             throw new InvalidOperationException();
         }
-        
-        if (GetVar(varName) == null)
+
+        if (ParseChar('(')) // function call, not var
+        {
+            if (GetFunc(name) == null)
+            {
+                throw new InvalidOperationException();
+            }
+            
+            ParseArguments(name);
+
+            if (!ParseChar(')'))
+            {
+                throw new InvalidOperationException();
+            }
+
+            return true;
+        }
+
+        if (GetVar(name, _funcName) == null)
         {
             throw new InvalidOperationException();
         }
 
         return true;
+    }
+
+    private bool ParseArguments(string funcName)
+    {
+        /*
+        var func = GetVar(funcName);
+        if (func.Operation != "func")
+        {
+            return false;
+        }
+        */
+        int argcount = 0;
+
+        while (!EndCode()) 
+        {
+            ParseExpression();
+
+            argcount++;
+
+            // TO DO check argcount
+            //if (argcount !=)
+            //{
+            //    throw new InvalidOperationException();
+            //}
+
+            if (!ParseChar(','))
+            {
+                return false;
+            }
+        }
+        return false;
     }
 
     private bool ParseChar(char symbol)
@@ -398,6 +622,27 @@ public class Analyzer
         return false;
     }
 
+    private bool ParseWordAndBlank(string str)
+    {
+        // ParseWordAndBlank('var')
+        //  var x;  // true
+        //  var1 = x;  // false
+        //  var;  // false
+        //  var(  // false
+
+        SkipBlanks();
+        int p1 = position;
+        bool f = ParseChars(str); 
+        int p2 = position;
+        SkipBlanks();
+        if (f && position > p2)
+        {
+            return true;
+        }
+        position = p1;
+        return false;
+    }
+
     private string? ParseVariable()
     {
         SkipBlanks();
@@ -421,29 +666,6 @@ public class Analyzer
 
         string v = expression[p1..position];
         return v;
-    }
-
-    private ParseResult GetVar(string name)
-    {
-        return variables[name];
-    }
-
-
-    private void AddVar(string name)
-    {
-        variables.TryAdd(name, new ParseResult(name));
-    }
-
-    private bool IsValidVariableSymbol()
-    {
-        if (position >= expression.Length)
-        {
-            return false;
-        }
-
-        char suspect = expression[position];
-
-        return char.IsDigit(suspect) || char.IsAsciiLetter(suspect) || suspect == '_';
     }
 
     private bool ParseNumber()

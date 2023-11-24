@@ -25,6 +25,69 @@ public class Tests
         z = 10;
         """
         , true)]
+    [TestCase(
+        """
+        x= 14 + 4;
+        y= x*(1+2/3) + 1;
+        """
+        , true)]
+    [TestCase(
+        """
+        var x=0;
+        var x, y;
+        var x = 1, z;
+        var x, z=2;
+        """
+        , true)]
+    [TestCase(
+        """
+        var x=3;
+        var x, y;
+
+        function f(x,y)
+        {
+          x = y;
+        }
+
+        x = f(1,2);
+        """
+        , true)]
+    [TestCase(
+        """
+        function f(x,y)
+        {
+          x = y;
+        }
+        """
+        , true)]
+    [TestCase(
+        """
+        function f(x,y)
+        {
+          x = y + 1;
+        }
+
+        x = 1;
+        """
+        , true)]
+    [TestCase(
+        """
+        var x=3;
+        var x, y;
+
+        function f(x,y)
+        {
+          x = y;
+        }
+        
+        function f2(x)
+        {
+          x = y+1;
+        }
+        
+        x = f(1,2) + f2 ( 1 ) ;
+        """
+        , true)]
     public void ValidatesParse(string expression, bool expected)
 
     {
@@ -71,10 +134,39 @@ public class Tests
         """
         x= a'';
         """)]
+    [TestCase(
+        """
+        var x, y;
+
+        function f(x,y)
+        {
+          x = z;
+        }
+        """
+        )]
+    [TestCase(
+        """
+        function f(x,y)
+        {
+          x = y + 1;
+        }
+
+        x = f2();
+        """
+        )]
+    [TestCase(
+        """
+        functionf(x,y)
+        {
+          x = y + 1;
+        }
+        """
+        )]
     public void ValidatesParseThrowException(string expression)
     {
         var parser = new SyntaxAnalyze.Analyzer(expression);
-        Assert.Throws(typeof(KeyNotFoundException), () => parser.Parse());
+        //Assert.Throws(typeof(KeyNotFoundException), () => parser.Parse());
+        Assert.Catch(() => parser.Parse());
     }
 
 
