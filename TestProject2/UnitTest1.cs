@@ -1,3 +1,5 @@
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 namespace TestProject2;
 
 public class Tests
@@ -165,8 +167,11 @@ public class Tests
     public void ValidatesParseThrowException(string expression)
     {
         var parser = new SyntaxAnalyze.Analyzer(expression);
-        //Assert.Throws(typeof(KeyNotFoundException), () => parser.Parse());
-        Assert.Catch(() => parser.Parse());
+        var actual = parser.Parse();
+        Assert.True(!actual && parser.Error != "");
+
+        ////Assert.Throws(typeof(KeyNotFoundException), () => parser.Parse());
+        //Assert.Catch(() => parser.Parse());
     }
 
 
@@ -263,10 +268,13 @@ public class Tests
     public void ThrowsException(string expression)
     {
         var parser = new SyntaxAnalyze.Analyzer(expression);
-        Assert.That(() => parser.IsValidExpression(), Throws.InvalidOperationException);
+        var actual = parser.IsValidExpression();
+        Assert.True(!actual && parser.Error != "");
+
+        //Assert.That(() => parser.IsValidExpression(), Throws.InvalidOperationException);
         //Assert.That(() => SyntaxAnalyze.Analyzer.IsValidExpression(expression), Throws.InvalidOperationException);
     }
-    
+
     [TestCase(
         """
         x= 'abc;
@@ -301,7 +309,10 @@ public class Tests
     public void ParseThrowsException(string expression)
     {
         var parser = new SyntaxAnalyze.Analyzer(expression);
-        Assert.That(() => parser.Parse(), Throws.InvalidOperationException);
+        var actual = parser.Parse();
+        Assert.True(!actual && parser.Error != "");
+
+        //Assert.That(() => parser.Parse(), Throws.InvalidOperationException);
         
         //Assert.That(() => SyntaxAnalyze.Analyzer.IsValidExpression(expression), Throws.InvalidOperationException);
     }

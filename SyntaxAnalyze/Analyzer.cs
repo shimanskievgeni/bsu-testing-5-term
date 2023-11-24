@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Xml.Linq;
 using static System.Formats.Asn1.AsnWriter;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SyntaxAnalyze;
 
@@ -16,15 +17,65 @@ public class Analyzer
     private readonly Dictionary<string, FuncDef> functions = new();
     private string? _funcName;
 
+    private string? error;
+    public string? Error { get => error; }
+
+    internal class ParserException : ApplicationException
+    {
+        public ParserException() : base() { }
+        public ParserException(string message) : base(message) { }
+        public ParserException(string message, Exception inner) : base(message, inner) { }
+    }
+
     public Analyzer(string expression)
     {
         this.expression = expression;
         this.position = 0;
+        this.error = null;
     }
+
+    public bool StopOnError(string msg)
+    {
+        error = msg;
+        throw new ParserException();
+    }
+
+    public void LogError(string Error)
+    {
+        Console.WriteLine("!!! Parsing error:");
+        Console.WriteLine(Error);
+        Console.WriteLine($"at position {position} .");
+        if (EndCode())
+        {
+            Console.WriteLine($"at the end of code (last 20 chars): ");
+            Console.WriteLine(expression[Math.Max(expression.Length-20, 0)..]);
+        }
+        else
+        {
+            Console.WriteLine($"at text (first 20 chars): ");
+            Console.WriteLine(expression[position..Math.Min(expression.Length, position + 20)]);
+        }
+    }
+
 
     public bool Parse()
     {
+        try
+        {
+            return _Parse();
+        }
+        catch (ParserException _)
+        {
+            LogError(Error);
+            return false;
+        }
+    }
+
+
+    public bool _Parse()
+    {
         position = 0;
+        error = null;
         _funcName = null;
 
         bool f;
@@ -46,6 +97,10 @@ public class Analyzer
         ParseOperators();
         
         f = EndCode();
+        if (!f)
+        {
+            StopOnError("expected End Of Code."); return false;
+        }
         return f;
     }
 
@@ -60,13 +115,13 @@ public class Analyzer
         {
             if (!ParseAssigment(true))
             {
-                throw new InvalidOperationException();
+                StopOnError("qqqError"); return false;
             }
         } while (ParseChar(','));
 
         if (!ParseChar(';'))
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return false;
         }
         return true;
     }
@@ -97,14 +152,14 @@ public class Analyzer
         ParseFunctionHeader();
         if (!ParseChar('{'))
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return false;
         }
 
         ParseOperators();
 
         if (!ParseChar('}'))
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return false;
         }
         _funcName = null;
 
@@ -124,13 +179,13 @@ public class Analyzer
         string? funcName = ParseVariable();
         if (funcName == null)
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return -1;
         }
         _funcName = funcName;
 
         if (!ParseChar('('))
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return -1;
         }
 
         AddFunc(_funcName);
@@ -145,7 +200,7 @@ public class Analyzer
                 name = ParseVariable();
                 if (name == null)
                 {
-                    throw new InvalidOperationException();
+                    StopOnError("qqqError"); return -1;
                 }
 
                 AddFuncVar(name, funcName);
@@ -157,7 +212,7 @@ public class Analyzer
 
         if (!ParseChar(')'))
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return -1;
         }
         return argcount;
     }
@@ -169,7 +224,11 @@ public class Analyzer
 
     private FuncDef GetFunc(string name)
     {
-        return functions[name];
+        //return functions[name];
+        if (functions.TryGetValue(name, out FuncDef? v))
+            return v;
+        else
+            return null;
     }
 
     private void AddVar(string name, string? funcName = null)
@@ -186,18 +245,19 @@ public class Analyzer
         localVars.TryAdd(name, new VariableDef(name));
     }
 
-    private VariableDef GetVar(string name, string? funcName)
+    private VariableDef? GetVar(string name, string? funcName)
     {
-        if (funcName == null)
-            return variables[name];
-        else
+        VariableDef? v;
+        if (funcName != null)
         {
             var localVars = functions[funcName].localVariables;  // functions.TryGetValue(funcName, out _);
-            if (localVars.TryGetValue(name, out VariableDef? v))
+            if (localVars.TryGetValue(name, out v))
                 return v;
-            else
-                return variables[name];
         }
+        if (variables.TryGetValue(name, out v))
+            return v;
+        else
+            return null;
     }
 
 
@@ -213,20 +273,29 @@ public class Analyzer
         return false;
     }
 
+
+    // for testing only
     public bool IsValidExpression()
     {
-        position = 0;
-
-        ParseExpression();
-
-        if (position == expression.Length)
+        try
         {
+            position = 0;
+            error = "";
+            ParseExpression();
+            if (!EndCode())
+            {
+                error = "expected End Of Code.";
+                LogError(Error);
+                return false;
+            }
             return true;
         }
-
-        throw new InvalidOperationException();
+        catch (ParserException _)
+        {
+            LogError(Error);
+            return false;
+        }
     }
-
 
 
     private bool ParseExpression()
@@ -235,7 +304,7 @@ public class Analyzer
         {
             if (!ParseOperand())
             {
-                throw new InvalidOperationException();
+                StopOnError("qqqError"); return false;
             }
         }
         else if (!ParseOperand())
@@ -252,7 +321,7 @@ public class Analyzer
 
             if (!ParseOperand())
             {
-                throw new InvalidOperationException();
+                StopOnError("qqqError"); return false;
             }
         }
 
@@ -302,7 +371,7 @@ public class Analyzer
 
             if (!ParseChar('\''))
             {
-                throw new InvalidOperationException();
+                StopOnError("qqqError"); return false;
             }
         }
         else
@@ -322,11 +391,13 @@ public class Analyzer
                 position++;
 
                 if (position >= expression.Length)
-                    throw new InvalidOperationException();
+                {
+                    StopOnError("qqqError"); return false;
+                }
 
                 if (!EscapedSymbols.Contains(CurrentChar()))
                 {
-                    throw new InvalidOperationException();
+                    StopOnError("qqqError"); return false;
                 }
             }
             else if (CurrentChar() == '\'')
@@ -338,7 +409,7 @@ public class Analyzer
             position++;
         }
 
-        throw new InvalidOperationException();
+        StopOnError("qqqError"); return false;
     }
 
 
@@ -366,7 +437,7 @@ public class Analyzer
 
         if (!varOnly && !ParseChar(';'))
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return false;
         }
 
         AddVar(name, _funcName);
@@ -502,8 +573,9 @@ public class Analyzer
                 }
             }
         }
-        
-        throw new InvalidOperationException();
+
+        //StopOnError("qqqError");
+        return ExpressionType.Undefined;
     }
 
 
@@ -515,7 +587,7 @@ public class Analyzer
 
             if (!ParseChar(')'))
             {
-                throw new InvalidOperationException();
+                StopOnError("qqqError"); return false;
             }
 
             return true;
@@ -537,21 +609,21 @@ public class Analyzer
 
         if (name == null)
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return false;
         }
 
         if (ParseChar('(')) // function call, not var
         {
             if (GetFunc(name) == null)
             {
-                throw new InvalidOperationException();
+                StopOnError("qqqError"); return false;
             }
             
             ParseArguments(name);
 
             if (!ParseChar(')'))
             {
-                throw new InvalidOperationException();
+                StopOnError("qqqError"); return false;
             }
 
             return true;
@@ -559,7 +631,7 @@ public class Analyzer
 
         if (GetVar(name, _funcName) == null)
         {
-            throw new InvalidOperationException();
+            StopOnError("qqqError"); return false;
         }
 
         return true;
@@ -585,7 +657,7 @@ public class Analyzer
             // TO DO check argcount
             //if (argcount !=)
             //{
-            //    throw new InvalidOperationException();
+            //    StopOnError("qqqError"); return false;
             //}
 
             if (!ParseChar(','))
