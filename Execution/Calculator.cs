@@ -23,9 +23,23 @@ public class Calculator
         return 0;
     }
 
+    public void ComputeOnTheTop(Stack<Token> operands, Stack<string> operators)
+    {
+        string op = operators.Pop();
+
+        Token? val2 = null;
+
+        if (!IsUnaryOperatioin(op))
+        {
+            val2 = operands.Pop();
+        }
+        var val1 = operands.Pop();
+
+        operands.Push(Operate(val1, val2, op));
+    }
+
     public Token Compute()
     {
-
         if (compiledCode?.tokens == null)
             return null;
 
@@ -42,7 +56,7 @@ public class Calculator
 
             if (token.Type == TokenType.Goto)
             {
-                i = (token as TokenGoto).ToToken;
+                i = (token as TokenGoto).toToken;
                 continue;
             }
 
@@ -63,13 +77,7 @@ public class Calculator
             {
                 while (operators.Count != 0 && operators.Peek() != "(")
                 {
-                    var val2 = operands.Pop();
-
-                    var val1 = operands.Pop();
-
-                    var op = operators.Pop();
-
-                    operands.Push(Operate(val1, val2, op));
+                    ComputeOnTheTop(operands, operators);
                 }
 
                 if (operators.Count != 0) operators.Pop();
@@ -80,13 +88,7 @@ public class Calculator
                 
                 while (operators.Count != 0 && GetOperationPriority(operators.Peek()) >= currentOperatorPriority)
                 {
-                    var val2 = operands.Pop();
-
-                    var val1 = operands.Pop();
-
-                    string op = operators.Pop();
-
-                    operands.Push(Operate(val1, val2, op));
+                    ComputeOnTheTop(operands, operators);
                 }
 
                 operators.Push(suspect);
@@ -96,35 +98,33 @@ public class Calculator
 
         while (operators.Count != 0 && operands.Count > 1)
         {
-            var val2 = operands.Pop();
-
-            var val1 = operands.Pop();
-
-            string op = operators.Pop();
-
-            operands.Push(Operate(val1, val2, op));
+            ComputeOnTheTop(operands, operators);
         }
 
         if (operators.Count != 0)
         {
             string op = operators.Pop();
             throw new InvalidOperationException($"operators stack is not empty at the end: {op}");
-            //return double.NaN;
         }
 
         Token tokenretval = operands.Pop();
 
         if (operands.Count > 1)
         {
-            //double op = operands.Pop();
             throw new InvalidOperationException($"operands stack is not empty at the end: ((op))");
-            //return double.NaN;
         }
 
         return tokenretval;
     }
 
-    private static TokenConstant Operate(Token left, Token right, string operation)
+    private static bool IsUnaryOperatioin(string operation)
+    {
+        if (operation == "!" || operation.StartsWith("Unary"))
+            return true;
+        return false;
+    }
+    
+    private static TokenConstantType Operate(Token left, Token? right, string operation)
     {
         //if (left.Type == TokenType.Constant && right.Type == TokenType.Constant)
         //{
@@ -134,40 +134,43 @@ public class Calculator
             string s1 = "", s2 = "";
             bool b1 = false, b2 = false;
 
-            if (left is TokenInt)
+            if (left is TokenConstant<int> ti)
             {
                 type1 = ExpressionType.Int;
-                i1 = (left as TokenInt).value;
+                i1 = ti.value;
             }
-            else if (left is TokenDouble) {
+            else if (left is TokenConstant<double> td) {
                 type1 = ExpressionType.Double;
-                d1 = (left as TokenDouble).value;
+                d1 = td.value;
             }
-            else if (left is TokenString) {
+            else if (left is TokenConstant<string> ts)
+            {
                 type1 = ExpressionType.Str;
-                s1 = (left as TokenString).value;
+                s1 = ts.value;
             }
-            else if (left is TokenBool) {
+            else if (left is TokenConstant<bool> tb) {
                 type1 = ExpressionType.Bool;
-                b1 = (left as TokenBool).value;
+                b1 = tb.value;
             }
 
-            if (right is TokenInt)
+            if (right is TokenConstant<int> ti2)
             {
                 type2 = ExpressionType.Int;
-                i2 = (right as TokenInt).value;
+                i2 = ti2.value;
             }
-            else if (right is TokenDouble) {
+            else if (right is TokenConstant<double> td2)
+            {
                 type2 = ExpressionType.Double;
-                d2 = (right as TokenDouble).value;
+                d2 = td2.value;
             }
-            else if (right is TokenString) {
+            else if (right is TokenConstant<string> ts2) 
+            { 
                 type2 = ExpressionType.Str;
-                s2 = (right as TokenString).value;
+                s2 = ts2.value;
             }
-            else if (right is TokenBool) {
+            else if (right is TokenConstant<bool> tb2) {
                 type2 = ExpressionType.Bool;
-                b2 = (right as TokenBool).value;
+                b2 = tb2.value;
             }
 
             var resultType = TypeResolver.ResultingOperationType(operation, type1, type2);
@@ -239,7 +242,15 @@ public class Calculator
             }
             else if (resultType == ExpressionType.Int)
             {
-                if (type1 == type2 && type1 == ExpressionType.Int)
+                if (type1 == ExpressionType.Int && (operation == "Unary-"))
+                {
+                    intRes = -i1;
+                }
+                else if (type1 == ExpressionType.Int && (operation == "Unary+"))
+                {
+                    intRes = +i1;
+                }
+                else if (type1 == type2 && type1 == ExpressionType.Int)
                 {
                     if (operation == "+") intRes = i1 + i2;
                     else if (operation == "-") intRes = i1 - i2;
@@ -248,10 +259,19 @@ public class Calculator
                     else if (operation == "%") intRes = i1 % i2;
                     else err = true;
                 }
+                else err = true;
             }
             else if (resultType == ExpressionType.Double)
             {
-                if (operation == "+") doubleRes = d1 + d2;
+                if (type1 == ExpressionType.Double && (operation == "Unary-"))
+                {
+                    doubleRes = -d1;
+                }
+                else if (type1 == ExpressionType.Double && (operation == "Unary+"))
+                {
+                    doubleRes = +d1;
+                }
+                else if (operation == "+") doubleRes = d1 + d2;
                 else if (operation == "-") doubleRes = d1 - d2;
                 else if (operation == "*") doubleRes = d1 * d2;
                 else if (operation == "/") doubleRes = d1 / d2;
@@ -273,16 +293,16 @@ public class Calculator
                 throw new InvalidOperationException($"Invalid operation: {operation} {type1} {type2} ");
             }
 
-            TokenConstant resToken;
+            TokenConstantType resToken;
 
             if (resultType == ExpressionType.Bool)
-                resToken = new TokenBool(boolRes);
+                resToken = new TokenConstant<bool>(boolRes, ExpressionType.Bool);
             else if (resultType == ExpressionType.Int)
-                resToken = new TokenInt(intRes);
+                resToken = new TokenConstant<int>(intRes, ExpressionType.Int);
             else if (resultType == ExpressionType.Double)
-                resToken = new TokenDouble(doubleRes);
+                resToken = new TokenConstant<double>(doubleRes, ExpressionType.Double);
             else if (resultType == ExpressionType.Str)
-                resToken = new TokenString(stringRes);
+                resToken = new TokenConstant<string>(stringRes, ExpressionType.Str);
             else
             {
                 throw new InvalidOperationException($"Invalid operation result type: {operation} {type1} {type2} {resultType} ");
@@ -291,120 +311,122 @@ public class Calculator
             return resToken;
         }
 
+    private static int GetOperationPriority(string operation) =>
+    operation switch
+    {
+        "<" or ">" or "==" or "!=" or "<=" or ">=" => 5,
+        "+" or "-" => 10,
+        "*" or "/" => 20,
+        "Unary-" or "Unary+" or "!" => 30,
+        _ => 0
+    };
 
-        /******
-        public double ComputeString(string source)
+    /******
+    public double ComputeString(string source)
+    {
+        Stack<double> operands = new();
+        Stack<char> operators = new();
+
+        for (var i = 0; i < source.Length; i++)
         {
-            Stack<double> operands = new();
-            Stack<char> operators = new();
+            char suspect = source[i];
+            if (suspect == ' ') continue;
 
-            for (var i = 0; i < source.Length; i++)
+            if (suspect == '(')
             {
-                char suspect = source[i];
-                if (suspect == ' ') continue;
-
-                if (suspect == '(')
-                {
-                    operators.Push(suspect);
-                }
-                else if (IsDigit(suspect))
-                {
-                    double value = 0;
-
-                    while (i < source.Length && IsDigit(source[i]))
-                    {
-                        value = value * 10 + (source[i] - '0');
-                        i++;
-                    }
-
-                    operands.Push(value);
-                    i--;
-                }
-                else if (suspect == ')')
-                {
-                    while (operators.Count != 0 && operators.Peek() != '(')
-                    {
-                        var val2 = operands.Pop();
-
-                        var val1 = operands.Pop();
-
-                        var op = operators.Pop();
-
-                        operands.Push(Operate(val1, val2, op));
-                    }
-
-                    if (operators.Count != 0) operators.Pop();
-                }
-                else
-                {
-                    var currentOperatorPriority = GetOperationPriority(suspect);
-
-                    while (operators.Count != 0 && GetOperationPriority(operators.Peek()) >= currentOperatorPriority)
-                    {
-                        var val2 = operands.Pop();
-
-                        var val1 = operands.Pop();
-
-                        char op = operators.Pop();
-
-                        operands.Push(Operate(val1, val2, op));
-                    }
-
-                    operators.Push(suspect);
-                }
+                operators.Push(suspect);
             }
-
-
-            while (operators.Count != 0 && operands.Count > 1)
+            else if (IsDigit(suspect))
             {
-                var val2 = operands.Pop();
+                double value = 0;
 
-                var val1 = operands.Pop();
+                while (i < source.Length && IsDigit(source[i]))
+                {
+                    value = value * 10 + (source[i] - '0');
+                    i++;
+                }
 
-                char op = operators.Pop();
-
-                operands.Push(Operate(val1, val2, op));
+                operands.Push(value);
+                i--;
             }
-
-            if (operators.Count != 0)
+            else if (suspect == ')')
             {
-                char op = operators.Pop();
-                throw new InvalidOperationException($"operators stack is not empty at the end: {op}");
-                //return double.NaN;
-            }
+                while (operators.Count != 0 && operators.Peek() != '(')
+                {
+                    var val2 = operands.Pop();
 
-            if (operands.Count > 1)
+                    var val1 = operands.Pop();
+
+                    var op = operators.Pop();
+
+                    operands.Push(Operate(val1, val2, op));
+                }
+
+                if (operators.Count != 0) operators.Pop();
+            }
+            else
             {
-                double op = operands.Pop();
-                throw new InvalidOperationException($"operands stack is not empty at the end: {op}");
-                //return double.NaN;
-            }
+                var currentOperatorPriority = GetOperationPriority(suspect);
 
-            return operands.Pop();
+                while (operators.Count != 0 && GetOperationPriority(operators.Peek()) >= currentOperatorPriority)
+                {
+                    var val2 = operands.Pop();
+
+                    var val1 = operands.Pop();
+
+                    char op = operators.Pop();
+
+                    operands.Push(Operate(val1, val2, op));
+                }
+
+                operators.Push(suspect);
+            }
         }
 
-         private static double Operate(double left, double right, string op) =>
-            op switch
-            {
-                "+" => left + right,
-                "-" => left - right,
-                "*" => left * right,
-                "/" => right switch
-                {
-                    0 => throw new DivideByZeroException(),
-                    _ => left / right
-                },
-                _ => throw new InvalidOperationException($"Invalid operator: {op}")
-            };
-         ***********/
 
-        private static int GetOperationPriority(string operation) =>
-        operation switch
+        while (operators.Count != 0 && operands.Count > 1)
         {
-            "+" or "-" => 1,
-            "*" or "/" => 2,
-            _ => 0
+            var val2 = operands.Pop();
+
+            var val1 = operands.Pop();
+
+            char op = operators.Pop();
+
+            operands.Push(Operate(val1, val2, op));
+        }
+
+        if (operators.Count != 0)
+        {
+            char op = operators.Pop();
+            throw new InvalidOperationException($"operators stack is not empty at the end: {op}");
+            //return double.NaN;
+        }
+
+        if (operands.Count > 1)
+        {
+            double op = operands.Pop();
+            throw new InvalidOperationException($"operands stack is not empty at the end: {op}");
+            //return double.NaN;
+        }
+
+        return operands.Pop();
+    }
+
+     private static double Operate(double left, double right, string op) =>
+        op switch
+        {
+            "+" => left + right,
+            "-" => left - right,
+            "*" => left * right,
+            "/" => right switch
+            {
+                0 => throw new DivideByZeroException(),
+                _ => left / right
+            },
+            _ => throw new InvalidOperationException($"Invalid operator: {op}")
         };
+     ***********/
+
 
     /// <summary>
     /// Check if the given char is digit
