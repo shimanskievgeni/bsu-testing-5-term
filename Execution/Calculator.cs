@@ -83,6 +83,15 @@ public class Calculator
             if (token == null)
                 return null;
 
+            suspect = "";
+
+            if (token.Type == TokenType.Ret)
+            {
+                i = i;
+                //if (i = (token as TokenRet).toToken;
+                //continue;
+            }
+
             if (token.Type == TokenType.Goto)
             {
                 i = (token as TokenGoto).toToken;
@@ -133,7 +142,8 @@ public class Calculator
                     ComputeOnTheTop(operands, operators);
                 }
 
-                operators.Push(suspect);
+                if (suspect != "")
+                    operators.Push(suspect);
             }
             i++;
         }

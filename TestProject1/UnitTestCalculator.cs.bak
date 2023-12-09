@@ -69,9 +69,6 @@ public class Tests
     [TestCase(" (50/10)", 5)]
     [TestCase(" -(50/10)*(-1)", 5)]
     [TestCase(" -(50/10)*(-1)/(-1)", -5)]
-    [TestCase(" -(50/10 + 5*2*3)*(-1)/(-1)", -35)]
-    [TestCase(" -(50/10 + 5*2*3*0)*(-1)/(-1)", -5)]
-    [TestCase(" -(50/10 + 5*2*3*0)*(-1)/(-1) + 2 - 2 + 0*4*5 ", -5)]
     [Test, Category("Positive scenario")]
     public void ComputesIntExpression(string expression, int expected)
     {
@@ -81,20 +78,6 @@ public class Tests
         Assert.That(actualInt, Is.EqualTo(expected));
     }
 
-    [TestCase("x = 1;", 0)]
-    [TestCase("return 1;", 1)]
-    [TestCase("return 1+1;", 2)]
-    [TestCase("return -1+2;", 1)]
-    [TestCase("return -(1+2);", -3)]
-    [TestCase("return 1 + 10*3 + 9;", 40)]
-    [TestCase("return 1 + (10*3 + 9) / 13 ;", 4)]
-    public void TestAssignAndReturn(string expression, int expected)
-    {
-        Token actual = Execution.Exec(expression); //Calculator.Compute(expression);
-        var actualInt = (actual as TokenConstant<int>).value;
-
-        Assert.That(actualInt, Is.EqualTo(expected));
-    }
     //[Test, Category("Positive scenario")]
     //public void ComputesWithPriority()
     //{

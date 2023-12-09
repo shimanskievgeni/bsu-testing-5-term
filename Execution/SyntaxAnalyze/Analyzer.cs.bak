@@ -140,7 +140,6 @@ public class Analyzer
             {
                 StopOnError("qqqError"); return false;
             }
-            CompiledCode.AddReturn();
         }
         return true;
     }
@@ -540,8 +539,7 @@ public class Analyzer
         }
 
         AddVar(name, _funcName);
-        var def = GetVar(name, _funcName);
-        CompiledCode.AddRefGlobalVar(name, def);
+
         return true;
     }
 
@@ -552,7 +550,7 @@ public class Analyzer
     {
         SkipBlanks();
         int p1 = position;
-        if (ParseChars("!")
+        if (  ParseChars("!")
            || ParseChars("-")
            || ParseChars("+")
 
@@ -663,8 +661,7 @@ public class Analyzer
         {
             if (isDouble)
             {
-                if (double.TryParse(str, System.Globalization.NumberStyles.Float,
-                        System.Globalization.CultureInfo.InvariantCulture, out double doubleVal))
+                if (double.TryParse(str, out double doubleVal))
                     CompiledCode.AddDouble(doubleVal);
                 else
                 {
@@ -686,35 +683,31 @@ public class Analyzer
 
         if (name == null)
         {
-            StopOnError("qqqError"); return false;
+            StopOnError("Expected operand."); return false;
         }
 
         if (ParseChar('(')) // function call, not var
         {
             if (GetFunc(name) == null)
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Function " + name + " not found."); return false;
             }
 
             ParseArguments(name);
 
             if (!ParseChar(')'))
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Expected ')' "); return false;
             }
-
 
             return true;
         }
 
-        var def = GetVar(name, _funcName);
-
-        if (def == null)
+        if (GetVar(name, _funcName) == null)
         {
-            StopOnError("Underfined variable: {" + name + "}"); return false;
+            StopOnError("Name " + name + " is not defined."); return false;
         }
-
-        CompiledCode.AddGlobalVarValue(name, def);
+        //CompiledCode.AddVarValue(name, _funcName);
 
         return true;
     }
