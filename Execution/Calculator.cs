@@ -3,6 +3,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml.XPath;
+using System;
 
 namespace Calculator;
 
@@ -23,7 +24,35 @@ public class Calculator
         return 0;
     }
 
-    public void ComputeOnTheTop(Stack<Token> operands, Stack<string> operators)
+    private static void Assign(Stack<Token> operands, TokenVar token)
+    {
+        var left = operands.Pop();
+
+        var def = token.def;
+
+        if (left is TokenConstant<int> ti)
+        {
+            def.intValue = ti.value;
+            def.type = ExpressionType.Int;
+        }
+        else if (left is TokenConstant<double> td)
+        {
+            def.doubleValue = td.value;
+            def.type = ExpressionType.Double;
+        }
+        else if (left is TokenConstant<string> ts)
+        {
+            def.stringValue = ts.value;
+            def.type = ExpressionType.Str;
+        }
+        else if (left is TokenConstant<bool> tb)
+        {
+            def.boolValue = tb.value;
+            def.type = ExpressionType.Bool;
+        }
+    }
+
+    public static void ComputeOnTheTop(Stack<Token> operands, Stack<string> operators)
     {
         string op = operators.Pop();
 
@@ -63,6 +92,19 @@ public class Calculator
             if (token.Type == TokenType.Operation)
             {
                 suspect = (token as TokenOperation).Operation;
+            }
+
+            if (token.Type == TokenType.ValueGlobalVar)
+            {
+                operands.Push(token);
+            }
+
+            if (token.Type == TokenType.RefGlobalVar)
+            {
+                //operands.Push(token);
+                Assign(operands, (token as TokenVar));
+                i++;
+                continue;
             }
 
             if (suspect == "(")
@@ -107,8 +149,16 @@ public class Calculator
             throw new InvalidOperationException($"operators stack is not empty at the end: {op}");
         }
 
-        Token tokenretval = operands.Pop();
+        Token tokenretval;
 
+        if (operands.Count != 0)
+        {
+            tokenretval = operands.Pop();
+        }
+        else
+        {
+            tokenretval = new TokenConstant<int>(0, ExpressionType.Int);
+        }
         if (operands.Count > 1)
         {
             throw new InvalidOperationException($"operands stack is not empty at the end: ((op))");
@@ -117,6 +167,7 @@ public class Calculator
         return tokenretval;
     }
 
+    
     private static bool IsUnaryOperatioin(string operation)
     {
         if (operation == "!" || operation.StartsWith("Unary"))

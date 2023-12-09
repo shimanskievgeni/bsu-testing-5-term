@@ -683,21 +683,21 @@ public class Analyzer
 
         if (name == null)
         {
-            StopOnError("qqqError"); return false;
+            StopOnError("Expected operand."); return false;
         }
 
         if (ParseChar('(')) // function call, not var
         {
             if (GetFunc(name) == null)
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Function " + name + " not found."); return false;
             }
 
             ParseArguments(name);
 
             if (!ParseChar(')'))
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Expected ')' "); return false;
             }
 
             return true;
@@ -705,8 +705,9 @@ public class Analyzer
 
         if (GetVar(name, _funcName) == null)
         {
-            StopOnError("qqqError"); return false;
+            StopOnError("Name " + name + " is not defined."); return false;
         }
+        //CompiledCode.AddVarValue(name, _funcName);
 
         return true;
     }

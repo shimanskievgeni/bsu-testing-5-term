@@ -4,42 +4,35 @@ public class VariableDef
 {
     public VariableDef()
     {
-        this.Name = null;
+        this.Name = "Undefined";
     }
 
     public VariableDef(string name)
     {
         this.Name = name;
-        this.Type = ExpressionType.Undefined;
     }
 
-    public VariableDef(string? name, ExpressionType type, double? value)
-    {
-        this.Name = name;
-        this.Type = type;
-        this.Value = value;
-    }
+    //public VariableDef(string name, double value)
+    //{
+    //    this.Name = name;
+    //    this.Value = value;
+    //}
 
-    public string? Name
+    public string Name
     {
         get;
         set;
     }
 
-    public ExpressionType Type
-    {
-        get;
-        set;
-    }
+    public int intValue;
+    public double doubleValue;
+    public string stringValue;
+    public bool boolValue;
 
-    public double? Value
-    {
-        get;
-        set;
-    }
-
-    public VariableDef Clone()
-    {
-        return new VariableDef(this.Name, this.Type, this.Value);
-    }
+    public ExpressionType type;
+  
+    //public VariableDef Clone()
+    //{
+    //    return new VariableDef(this.Name, this.Value);
+    //}
 }

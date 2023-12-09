@@ -47,13 +47,13 @@ public class Analyzer
         Console.WriteLine($"at position {position} .");
         if (EndCode())
         {
-            Console.WriteLine($"at the end of code (last 20 chars): ");
-            Console.WriteLine(expression[Math.Max(expression.Length - 20, 0)..]);
+            Console.WriteLine($"at the end of code (last 30 chars): ");
+            Console.WriteLine(expression[Math.Max(expression.Length - 30, 0)..]);
         }
         else
         {
-            Console.WriteLine($"at text (first 20 chars): ");
-            Console.WriteLine(expression[position..Math.Min(expression.Length, position + 20)]);
+            Console.WriteLine($"at text (30 chars before and after): ");
+            Console.WriteLine(expression[Math.Max(0, position - 30)..Math.Min(expression.Length, position + 30)]);
         }
     }
 
@@ -539,7 +539,8 @@ public class Analyzer
         }
 
         AddVar(name, _funcName);
-
+        var def = GetVar(name, _funcName);
+        CompiledCode.AddRefGlobalVar(name, def);
         return true;
     }
 
@@ -550,21 +551,23 @@ public class Analyzer
     {
         SkipBlanks();
         int p1 = position;
-        if (
-              ParseChars("!")
+        if (ParseChars("!")
            || ParseChars("-")
            || ParseChars("+")
 
            )
         {
-            ;
+            var operation = expression[p1..position];
+            if (operation == "+" || operation == "-")
+            {
+                operation = "Unary" + operation;
+            }
+            CompiledCode.AddOperation(operation);
         }
         else
         {
             return false;
         }
-        var operation = expression[p1..position];
-        CompiledCode.AddOperation(operation);
         return true;
     }
 
@@ -645,27 +648,36 @@ public class Analyzer
             return true;
         }
 
-        if (ParseIntNumber(out str))
-        {
-            if (!int.TryParse(str, out int intVal))
-            {
-                StopOnError(@"Error on parsing number: {str} "); return false;
-            }
-            CompiledCode.AddInt(intVal);
-            return true;
-        }
+        //if (ParseIntNumber(out str))
+        //{
+        //    if (!int.TryParse(str, out int intVal))
+        //    {
+        //        StopOnError(@"Error on parsing number: {str} "); return false;
+        //    }
+        //    CompiledCode.AddInt(intVal);
+        //    return true;
+        //}
 
         if (ParseNumber(out str, out bool isDouble))
         {
-            if (!isDouble && !int.TryParse(str, out int intVal))
+            if (isDouble)
+            {
+                if (double.TryParse(str, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out double doubleVal))
+                    CompiledCode.AddDouble(doubleVal);
+                else
+                {
+                    StopOnError(@"Error on parsing double(?) number: {str} "); return false;
+            }
+            }
+            else if (int.TryParse(str, out int intVal))
+            {
+            CompiledCode.AddInt(intVal);
+        }
+            else
             {
                 StopOnError(@"Error on parsing int(?) number: {str} "); return false;
             }
-            if (!double.TryParse(str, out double doubleVal))
-            {
-                StopOnError(@"Error on parsing double(?) number: {str} "); return false;
-            }
-            CompiledCode.AddDouble(doubleVal);
             return true;
         }
 
@@ -690,13 +702,18 @@ public class Analyzer
                 StopOnError("qqqError"); return false;
             }
 
+
             return true;
         }
 
-        if (GetVar(name, _funcName) == null)
+        var def = GetVar(name, _funcName);
+
+        if (def == null)
         {
-            StopOnError("qqqError"); return false;
+            StopOnError("Underfined variable: {" + name + "}"); return false;
         }
+
+        CompiledCode.AddGlobalVarValue(name, def);
 
         return true;
     }
@@ -841,6 +858,7 @@ public class Analyzer
         isDouble = false;
         StringBuilder number = new();
 
+        var p1 = position;
         while (position < expression.Length && Validators.IsDigit(expression[position]))
         {
             number.Append(expression[position]);
@@ -857,7 +875,7 @@ public class Analyzer
             number.Append(expression[position]);
             position++;
         }
-        if (position < expression.Length && (expression[position] == 'e' || expression[position] == 'E'))
+        if (number.Length > 0 && position < expression.Length && (expression[position] == 'e' || expression[position] == 'E'))
         {
             number.Append(expression[position]);
             position++;
@@ -874,7 +892,11 @@ public class Analyzer
             isDouble = true;
         }
         str = number.ToString();
-
+        if (position < expression.Length && (char.IsLetter(expression[position]) || (expression[position] == '_') || (expression[position] == '.')))
+        {
+            position = p1;
+            return false;
+        }
         return number.Length > 0;
     }
 }

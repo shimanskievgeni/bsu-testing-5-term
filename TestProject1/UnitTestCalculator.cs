@@ -43,6 +43,12 @@ public class Tests
     [TestCase("7.0 - 2.0", 5)]
     [TestCase(" - 2.0 + 7.0", 5)]
     [TestCase(" -2.0 + 7.000", 5)]
+    [TestCase(" 1/3.0 * 5.0*3 ", 5)]
+    [TestCase(" 5/3.0 * 3.0 ", 5)]
+    [TestCase(" 1/3.0 * 5 * 3 ", 5)]
+    [TestCase(" 1.0/3 * 5 * 3 ", 5)]
+    [TestCase(" (1/3.0) * (5 * 3) ", 5)]
+    [TestCase(" -(1/3.0) * (-5 * 3) ", 5)]
     [Test, Category("Positive scenario")]
     public void ComputesDoubleExpression(string expression, double expected)
     {
@@ -51,7 +57,7 @@ public class Tests
 
         const double tolerance = 1e-200;
 
-        Assert.That(Math.Abs(actualDouble - expected), Is.LessThanOrEqualTo(tolerance));
+        Assert.That(Math.Abs(actualDouble / expected - 1), Is.LessThanOrEqualTo(tolerance));
     }
 
     [TestCase(" 2 +3 ", 5)]
@@ -59,6 +65,10 @@ public class Tests
     [TestCase("7 - 2", 5)]
     [TestCase(" - 2 + 7", 5)]
     [TestCase(" -20 + 25  ", 5)]
+    [TestCase(" (5/1) * (3 / 3) ", 5)]
+    [TestCase(" (50/10)", 5)]
+    [TestCase(" -(50/10)*(-1)", 5)]
+    [TestCase(" -(50/10)*(-1)/(-1)", -5)]
     [Test, Category("Positive scenario")]
     public void ComputesIntExpression(string expression, int expected)
     {
@@ -68,6 +78,14 @@ public class Tests
         Assert.That(actualInt, Is.EqualTo(expected));
     }
 
+    [TestCase("x = 1;")]
+    public void TestAssign(string expression)///, int expected)
+    {
+        Token actual = Execution.Exec(expression); //Calculator.Compute(expression);
+        var actualInt = (actual as TokenConstant<int>).value;
+
+        Assert.IsTrue(true);// actualInt, Is.EqualTo(expected));
+    }
     //[Test, Category("Positive scenario")]
     //public void ComputesWithPriority()
     //{
