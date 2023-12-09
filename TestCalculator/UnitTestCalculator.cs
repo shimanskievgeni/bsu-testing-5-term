@@ -85,6 +85,7 @@ public class Tests
     [TestCase("return 1;", 1)]
     [TestCase("return 1+1;", 2)]
     [TestCase("return -1+2;", 1)]
+    [TestCase("return -1+(2*30*5) +1;", 300)]
     [TestCase("return -(1+2);", -3)]
     [TestCase("return 1 + 10*3 + 9;", 40)]
     [TestCase("return 1 + (10*3 + 9) / 13 ;", 4)]

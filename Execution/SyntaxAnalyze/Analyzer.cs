@@ -154,30 +154,13 @@ public class Analyzer
 
         ParseExpression();
 
-        if (!ParseChar('{'))
-        {
-            StopOnError("Expacted '{' arter if"); return false;
-        }
-        ParseOperators();
-        if (!ParseChar('}'))
-        {
-            StopOnError("Expacted '{' arter if"); return false;
-        }
-     
+        ParseBlock();
+
         if (ParseKeyWord("else"))
         {
-
-            if (ParseChar('{'))
+            if (!ParseIf())
             {
-                ParseOperators();
-                if (!ParseChar('}'))
-                {
-                    StopOnError("Expacted '}' arter else"); return false;
-                }
-            }
-            else
-            {
-                ParseIf();
+                ParseBlock();
             }
         }
         return true;
@@ -193,20 +176,27 @@ public class Analyzer
 
         ParseExpression();
 
-        if (!ParseChar('{'))
-        {
-            StopOnError("Expacted '{' arter if"); return false;
-        }
-        ParseOperators();
-        if (!ParseChar('}'))
-        {
-            StopOnError("Expacted '{' arter if"); return false;
-        }
+        ParseBlock();
 
         return true;
 
     }
 
+    public bool ParseBlock()
+    {
+        if (!ParseChar('{'))
+        {
+            StopOnError("Expected '{'"); return false;
+        }
+        
+        ParseOperators();
+
+        if (!ParseChar('}'))
+        {
+            StopOnError("Expected '}'"); return false;
+        }
+        return true;
+    }
 
 
     public bool ParseOperators()
@@ -214,7 +204,6 @@ public class Analyzer
         bool f;
 
         do
-
         {
             f = ParseReturn();
             if (!f)
@@ -247,17 +236,9 @@ public class Analyzer
         }
 
         ParseFunctionHeader();
-        if (!ParseChar('{'))
-        {
-            StopOnError("qqqError"); return false;
-        }
 
-        ParseOperators();
+        ParseBlock();
 
-        if (!ParseChar('}'))
-        {
-            StopOnError("qqqError"); return false;
-        }
         _funcName = null;
 
         return true;
