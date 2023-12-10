@@ -1,7 +1,7 @@
 ﻿using System.Xml.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-//namespace CompiledCode;
+namespace Execution.Compiled;
 
 public enum TokenType
 {
@@ -17,7 +17,8 @@ public enum TokenType
     ValueGlobalVar,
     ValueLocalVar,
     Ret,
-    Call
+    Call,
+    ExpressionEnd // really nop, needed in IF and WHILE w/o (..)
 }
 
 public class Token
@@ -25,7 +26,7 @@ public class Token
     public TokenType Type { get; private set; }
 
     public Token(TokenType type)
-    { this.Type = type; }
+    { Type = type; }
 }
 
 public class TokenConstantType : Token
@@ -85,12 +86,12 @@ public class TokenOperation : Token
 
     public TokenOperation(string value) : base(TokenType.Operation)
     {
-        this.Operation = value;
+        Operation = value;
     }
 
 }
 
-public class TokenVar: Token
+public class TokenVar : Token
 {
     public string name { get; private set; }
     public VariableDef def { get; private set; }
@@ -103,10 +104,10 @@ public class TokenVar: Token
 
 }
 
-public class TokenGoto: Token
+public class TokenGoto : Token
 {
     //public readonly Token ToToken;
-    public readonly int toToken;
+    public int toToken;
 
     public TokenGoto(TokenType type, int toToken) : base(type)
     {
@@ -118,52 +119,57 @@ public class CompiledCode
 {
     public readonly IList<Token> tokens = new List<Token>();
 
+    public int LastIndex { get => tokens.Count - 1; }
     public void AddReturn()
     {
-        this.tokens.Add(new Token(TokenType.Ret));
+        tokens.Add(new Token(TokenType.Ret));
+    }
+    public void AddExpressionEnd()
+    {
+        tokens.Add(new Token(TokenType.ExpressionEnd));
     }
     public void AddGoto(int toToken)
     {
-        this.tokens.Add(new TokenGoto(TokenType.Goto, toToken));
+        tokens.Add(new TokenGoto(TokenType.Goto, toToken));
     }
     public void AddGotoIf(int toToken)
     {
-        this.tokens.Add(new TokenGoto(TokenType.GotoIf, toToken));
+        tokens.Add(new TokenGoto(TokenType.GotoIf, toToken));
     }
     public void AddOperation(string operation)
     {
-        this.tokens.Add(new TokenOperation(operation));
+        tokens.Add(new TokenOperation(operation));
     }
 
     public void AddGlobalVarValue(string name, VariableDef def)
     {
-        this.tokens.Add(new TokenVar(name, def, TokenType.ValueGlobalVar));
+        tokens.Add(new TokenVar(name, def, TokenType.ValueGlobalVar));
     }
 
     public void AddRefGlobalVar(string name, VariableDef def)
     {
-        this.tokens.Add(new TokenVar(name, def, TokenType.RefGlobalVar));
+        tokens.Add(new TokenVar(name, def, TokenType.RefGlobalVar));
     }
     public void AddString(string value)
     {
-        this.tokens.Add(new TokenConstant<string>(value, ExpressionType.Str));
+        tokens.Add(new TokenConstant<string>(value, ExpressionType.Str));
         //this.tokens.Add(new TokenString(value));
     }
 
     public void AddInt(int value)
     {
-        this.tokens.Add(new TokenConstant<int>(value, ExpressionType.Int));
+        tokens.Add(new TokenConstant<int>(value, ExpressionType.Int));
         //this.tokens.Add(new TokenInt(value));
     }
 
     public void AddDouble(double value)
     {
-        this.tokens.Add(new TokenConstant<double>(value, ExpressionType.Double));
+        tokens.Add(new TokenConstant<double>(value, ExpressionType.Double));
         //this.tokens.Add(new TokenDouble(value));
     }
     public void AddBool(bool value)
     {
-        this.tokens.Add(new TokenConstant<bool>(value, ExpressionType.Bool));
+        tokens.Add(new TokenConstant<bool>(value, ExpressionType.Bool));
         //this.tokens.Add(new TokenBool(value));
     }
 }

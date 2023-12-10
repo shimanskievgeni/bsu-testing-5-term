@@ -1,20 +1,20 @@
-﻿namespace SyntaxAnalyze;
+﻿namespace Execution.Compiled;
 
 public class FuncDef
 {
-    public Dictionary<string, VariableDef> localVariables = new ();
+    public Dictionary<string, VariableDef> localVariables = new();
 
     public FuncDef()
     {
-        this.Name = "Undefined";
-        this.ParamCount = 0;
+        Name = "Undefined";
+        ParamCount = 0;
     }
 
     public FuncDef(string name)
     {
-        this.Name = name;
+        Name = name;
     }
-    
+
     public string Name
     {
         set;

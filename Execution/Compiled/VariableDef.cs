@@ -1,17 +1,17 @@
-﻿namespace SyntaxAnalyze;
+﻿namespace Execution.Compiled;
 
 public class VariableDef
 {
     public VariableDef()
     {
-        this.Name = "Undefined";
+        Name = "Undefined";
     }
 
     public VariableDef(string name)
     {
-        this.Name = name;
+        Name = name;
     }
-    
+
     //public VariableDef(string name, double value)
     //{
     //    this.Name = name;
@@ -26,11 +26,11 @@ public class VariableDef
 
     public int intValue;
     public double doubleValue;
-    public string stringValue;
+    public string? stringValue;
     public bool boolValue;
 
     public ExpressionType type;
-  
+
     //public VariableDef Clone()
     //{
     //    return new VariableDef(this.Name, this.Value);

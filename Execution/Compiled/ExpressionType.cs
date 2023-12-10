@@ -10,7 +10,16 @@ public enum ExpressionType
     Int
 }
 
-public class TypeResolver
+public class TypedValue
+{
+    public ExpressionType type;
+    public int intValue;
+    public double doubleValue;
+    public string stringValue;
+    public bool boolValue;
+}
+
+public static class TypeResolver
 {
     public static ExpressionType ResultingOperationType(string operation, ExpressionType type1, ExpressionType type2)
     {

@@ -1,6 +1,7 @@
 namespace TestCalculator;
 
-using Calculator;
+using Execution.Compiled;
+using Execution;
 
 public class Tests
 {
@@ -89,7 +90,51 @@ public class Tests
     [TestCase("return -(1+2);", -3)]
     [TestCase("return 1 + 10*3 + 9;", 40)]
     [TestCase("return 1 + (10*3 + 9) / 13 ;", 4)]
-    public void TestAssignAndReturn(string expression, int expected)
+    [TestCase("""
+                if (2==2) { return 1; }
+              """, 1)]
+    [TestCase("""
+                if (2==0) { return 1; }
+              """, 0)]
+    [TestCase("""
+                if (11 > 0) { return 1; }
+              """, 1)]
+    [TestCase("""
+                if (11 > 0) { return 1; }
+                else { return 22; }
+              """, 1)]
+    [TestCase("""
+                if (11 < 0) { return 1; }
+                else { return 22; }
+              """, 22)]
+    [TestCase("""
+              x = 1;
+              if x == 1 { return 100; }
+                else { return 500; }
+              """, 100)]
+    [TestCase("""
+              x = -1;
+              if (x == -1) { return 100; }
+                else { return 500; }
+              """, 100)]
+    [TestCase("""
+              x = 2;
+              if (x != 1) { return 100; }
+                else { return 500; }
+              """, 100)]
+    [TestCase("""
+              x = 2;
+              if x > 1 { return 100; }
+                else { return 500; }
+              """, 100)]
+    [TestCase("""
+              x = 2;
+              if x > 10 { return 100; }
+                else if (x > 100) { return 500; }
+                else if (x < 5)   { return 15; }
+                else  { return 99; }
+              """, 15)]
+    public void TestExec(string expression, int expected)
     {
         Token actual = Execution.Exec(expression); //Calculator.Compute(expression);
         var actualInt = (actual as TokenConstant<int>).value;

@@ -1,7 +1,9 @@
 ﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+using Execution.Compiled;
+using Execution.SyntaxAnalyze;
+//using Execution.;
 
-//namespace Execution;
-
+namespace Execution;
 public static class Execution
 {
     public static Token Exec(string source)
@@ -10,7 +12,7 @@ public static class Execution
 
         if (!parser.Parse())
             return null;
-        var calculator = new Calculator.Calculator(parser.CompiledCode);
+        var calculator = new Calculator(parser.CompiledCode);
         return calculator.Compute();
     }
 
@@ -20,7 +22,7 @@ public static class Execution
 
         if (!parser.IsValidExpression())
             return null;
-        var calculator = new Calculator.Calculator(parser.CompiledCode);
+        var calculator = new Calculator(parser.CompiledCode);
         return calculator.Compute();
     }
 

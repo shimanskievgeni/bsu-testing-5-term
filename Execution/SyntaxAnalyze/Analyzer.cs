@@ -1,6 +1,7 @@
 ﻿using System.Text;
+using Execution.Compiled;
 
-namespace SyntaxAnalyze;
+namespace Execution.SyntaxAnalyze;
 
 public class Analyzer
 {
@@ -29,9 +30,9 @@ public class Analyzer
     public Analyzer(string expression)
     {
         this.expression = expression;
-        this.position = 0;
-        this.error = null;
-        this.CompiledCode = new CompiledCode();
+        position = 0;
+        error = null;
+        CompiledCode = new CompiledCode();
     }
 
     public bool StopOnError(string msg)
@@ -138,10 +139,10 @@ public class Analyzer
             ParseExpression();
             if (!ParseChar(';'))
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Expected ';' "); return false;
             }
-            CompiledCode.AddReturn();
         }
+        CompiledCode.AddReturn();
         return true;
     }
 
@@ -154,17 +155,30 @@ public class Analyzer
 
         ParseExpression();
 
+        CompiledCode.AddExpressionEnd(); // -1 just placeholder
+        CompiledCode.AddGotoIf(-1); // -1 just placeholder
+        var indexTokenWithGoto = CompiledCode.LastIndex;
+
         ParseBlock();
 
         if (ParseKeyWord("else"))
         {
+            (CompiledCode.tokens[indexTokenWithGoto] as TokenGoto).toToken = CompiledCode.LastIndex + 2;
+            CompiledCode.AddGoto(-1); // -1 just placeholder
+            indexTokenWithGoto = CompiledCode.LastIndex;
+
             if (!ParseIf())
             {
                 ParseBlock();
             }
+
+            (CompiledCode.tokens[indexTokenWithGoto] as TokenGoto).toToken = CompiledCode.LastIndex + 1;
+        }
+        else
+        {
+            (CompiledCode.tokens[indexTokenWithGoto] as TokenGoto).toToken = CompiledCode.LastIndex + 1;
         }
         return true;
-      
     }
 
     public bool ParseWhile()
@@ -188,7 +202,7 @@ public class Analyzer
         {
             StopOnError("Expected '{'"); return false;
         }
-        
+
         ParseOperators();
 
         if (!ParseChar('}'))
@@ -229,8 +243,8 @@ public class Analyzer
 
     private bool ParseFunction()
     {
-        SkipBlanks();
-        if (!ParseWordAndBlank("function"))
+        // if (!ParseWordAndBlank("function"))
+        if (!ParseKeyWord("function"))
         {
             return false;
         }
@@ -846,7 +860,7 @@ public class Analyzer
             number.Append(expression[position]);
             position++;
         }
-        if (position < expression.Length && (expression[position] == '.'))
+        if (position < expression.Length && expression[position] == '.')
         {
             number.Append(expression[position]);
             position++;
@@ -874,7 +888,7 @@ public class Analyzer
             isDouble = true;
         }
         str = number.ToString();
-        if (position < expression.Length && (char.IsLetter(expression[position]) || (expression[position] == '_') || (expression[position] == '.')))
+        if (position < expression.Length && (char.IsLetter(expression[position]) || expression[position] == '_' || expression[position] == '.'))
         {
             position = p1;
             return false;

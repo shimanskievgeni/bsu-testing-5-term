@@ -1,5 +1,7 @@
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
+using Execution.SyntaxAnalyze;
+
 namespace TestParser;
 
 public class Tests
@@ -93,7 +95,7 @@ public class Tests
     public void ValidatesParse(string expression, bool expected)
 
     {
-        var parser = new SyntaxAnalyze.Analyzer(expression);
+        var parser = new Execution.SyntaxAnalyze.Analyzer(expression);
         bool actual = parser.Parse();
 
         Assert.That(actual, Is.EqualTo(expected));
@@ -120,7 +122,7 @@ public class Tests
         """,true)]
     public void ValidatesParseSTR(string expression, bool expected)
     {
-        var parser = new SyntaxAnalyze.Analyzer(expression);
+        var parser = new Analyzer(expression);
         bool actual = parser.Parse();
 
         Assert.That(actual, Is.EqualTo(expected));
@@ -166,7 +168,7 @@ public class Tests
         )]
     public void ValidatesParseThrowException(string expression)
     {
-        var parser = new SyntaxAnalyze.Analyzer(expression);
+        var parser = new Analyzer(expression);
         var actual = parser.Parse();
         Assert.True(!actual && parser.Error != "");
 
@@ -205,7 +207,7 @@ public class Tests
     public void ValidatesExpression(string expression, bool expected)
 
     {
-        var parser = new SyntaxAnalyze.Analyzer(expression);
+        var parser = new Analyzer(expression);
         bool actual = parser.IsValidExpression();
 
         Assert.That(actual, Is.EqualTo(expected));
@@ -231,7 +233,7 @@ public class Tests
         """)]
     public void AcceptsComments(string expression)
     {
-        var parser = new SyntaxAnalyze.Analyzer(expression);
+        var parser = new Analyzer(expression);
         Assert.That(parser.IsValidExpression(), Is.True);
         // Assert.That(SyntaxAnalyze.Analyzer.IsValidExpression(expression), Is.True);
     }
@@ -267,7 +269,7 @@ public class Tests
     //[TestCase("!'1'")]
     public void ThrowsException(string expression)
     {
-        var parser = new SyntaxAnalyze.Analyzer(expression);
+        var parser = new Analyzer(expression);
         var actual = parser.IsValidExpression();
         Assert.True(!actual && parser.Error != "");
 
@@ -308,7 +310,7 @@ public class Tests
     //    """)]
     public void ParseThrowsException(string expression)
     {
-        var parser = new SyntaxAnalyze.Analyzer(expression);
+        var parser = new Analyzer(expression);
         var actual = parser.Parse();
         Assert.True(!actual && parser.Error != "");
 
