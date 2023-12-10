@@ -380,10 +380,12 @@ public class Calculator
     private static int GetOperationPriority(string operation) =>
     operation switch
     {
-        "<" or ">" or "==" or "!=" or "<=" or ">=" => 5,
-        "+" or "-" => 10,
-        "*" or "/" => 20,
-        "Unary-" or "Unary+" or "!" => 30,
+        "||" => 70,
+        "&&" => 80,
+        "<" or ">" or "==" or "!=" or "<=" or ">=" => 100,
+        "+" or "-" => 200,
+        "*" or "/" or "%" => 300,
+        "Unary-" or "Unary+" or "!" => 1000,
         _ => 0
     };
 

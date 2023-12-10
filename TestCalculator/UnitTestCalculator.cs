@@ -132,6 +132,16 @@ public class Tests
               """, 10)]
     [TestCase("""
               i = 0;
+              j = 2;
+              while i < 10 && j <= 2 
+              {
+                i = i + 1;
+                j = i % 3;
+              }
+              return i+0; 
+              """, 10)]
+    [TestCase("""
+              i = 0;
               while (i < 10)
               {
                 i = i + 1 - 2*0; 
