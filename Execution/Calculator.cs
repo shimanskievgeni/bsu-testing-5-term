@@ -20,40 +20,11 @@ public class Calculator
         this.compiledCode = compiledCode;
     }
 
-    public double Compute(string source)
-    {
-        return 0;
-    }
-
-    //public double Compute(string source)
-    //{
-
     private static void Assign(Stack<Token> operands, TokenVar token)
     {
         var left = operands.Pop();
 
-        var def = token.def;
-
-        if (left is TokenConstant<int> ti)
-        {
-            def.intValue = ti.value;
-            def.type = ExpressionType.Int;
-        }
-        else if (left is TokenConstant<double> td)
-        {
-            def.doubleValue = td.value;
-            def.type = ExpressionType.Double;
-        }
-        else if (left is TokenConstant<string> ts)
-        {
-            def.stringValue = ts.value;
-            def.type = ExpressionType.Str;
-        }
-        else if (left is TokenConstant<bool> tb)
-        {
-            def.boolValue = tb.value;
-            def.type = ExpressionType.Bool;
-        }
+        token.def.typedValue.SetFrom((left as TokenConstantType));
     }
 
     public static void ComputeOnTheTop(Stack<Token> operands, Stack<string> operators)
@@ -79,7 +50,7 @@ public class Calculator
         Stack<Token> operands = new();
         Stack<string> operators = new();
 
-        string suspect = "";
+        string suspect;// = "";
         int i = 0;
         while (i < compiledCode.tokens.Count)
         {
@@ -109,11 +80,7 @@ public class Calculator
                     continue;
                 }
             }
-            else if (token.Type == TokenType.ValueGlobalVar)
-            {
-                operands.Push(token);
-            }
-            else if (token.Type == TokenType.RefGlobalVar)
+            else if (token.Type == TokenType.SetGlobalVar)
             {
                 //operands.Push(token);
                 Assign(operands, token as TokenVar);
@@ -129,7 +96,8 @@ public class Calculator
             {
                 operators.Push(suspect);
             }
-            else if (token.Type == TokenType.Constant)
+            else if (token.Type == TokenType.Constant
+                  || token.Type == TokenType.GetGlobalVarValue)
             {
                 operands.Push(token);
             }
@@ -201,10 +169,23 @@ public class Calculator
         ExpressionType type1 = ExpressionType.Undefined, type2 = ExpressionType.Undefined;
         int i1 = 0, i2 = 0;
         double d1 = 0, d2 = 0;
-        string s1 = "", s2 = "";
+        string? s1 = "", s2 = "";
         bool b1 = false, b2 = false;
 
-        if (left is TokenConstant<int> ti)
+        TypedValue typedValue1;
+        TypedValue typedValue2;
+
+        if (left is TokenVar tvar1)
+        {
+            typedValue1 = tvar1.def.typedValue;
+
+            type1 = typedValue1.type;
+            if (type1 == ExpressionType.Int) i1 = typedValue1.intValue;
+            else if (type1 == ExpressionType.Double) d1 = typedValue1.doubleValue;
+            else if (type1 == ExpressionType.Str) s1 = typedValue1.stringValue;
+            else if (type1 == ExpressionType.Bool) b1 = typedValue1.boolValue;
+        }
+        else if (left is TokenConstant<int> ti)
         {
             type1 = ExpressionType.Int;
             i1 = ti.value;
@@ -225,7 +206,17 @@ public class Calculator
             b1 = tb.value;
         }
 
-        if (right is TokenConstant<int> ti2)
+        if (right is TokenVar tvar2)
+        {
+            typedValue2 = tvar2.def.typedValue;
+
+            type2 = typedValue2.type;
+            if (type2 == ExpressionType.Int) i2 = typedValue2.intValue;
+            else if (type2 == ExpressionType.Double) d2 = typedValue2.doubleValue;
+            else if (type2 == ExpressionType.Str) s2 = typedValue2.stringValue;
+            else if (type2 == ExpressionType.Bool) b2 = typedValue2.boolValue;
+        }
+        else if (right is TokenConstant<int> ti2)
         {
             type2 = ExpressionType.Int;
             i2 = ti2.value;

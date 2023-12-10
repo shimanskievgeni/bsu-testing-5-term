@@ -136,8 +136,8 @@ public class Tests
               """, 15)]
     public void TestExec(string expression, int expected)
     {
-        Token actual = Execution.Exec(expression); //Calculator.Compute(expression);
-        var actualInt = (actual as TokenConstant<int>).value;
+        Token? actual = Execution.Exec(expression); //Calculator.Compute(expression);
+        var actualInt = (actual as TokenConstant<int>)?.value;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }

@@ -1,22 +1,49 @@
-﻿//namespace ExpressionType;
+﻿namespace Execution.Compiled;
 
 public enum ExpressionType
 {
     Undefined,
-    Num,
-    Str,
-    Bool,
+    Int,
     Double,
-    Int
+    Str,
+    Bool
 }
 
-public class TypedValue
+public struct TypedValue
 {
-    public ExpressionType type;
-    public int intValue;
-    public double doubleValue;
-    public string stringValue;
-    public bool boolValue;
+    public ExpressionType type = ExpressionType.Undefined;
+    public int intValue = 0;
+    public double doubleValue = 0;
+    public string? stringValue;
+    public bool boolValue = false;
+
+    public TypedValue()
+    {
+        type = ExpressionType.Undefined;
+    }
+    public void SetFrom(TokenConstantType token)
+    {
+        if (token is TokenConstant<int> ti)
+        {
+            intValue = ti.value;
+            type = ExpressionType.Int;
+        }
+        else if (token is TokenConstant<double> td)
+        {
+            doubleValue = td.value;
+            type = ExpressionType.Double;
+        }
+        else if (token is TokenConstant<string> ts)
+        {
+            stringValue = ts.value;
+            type = ExpressionType.Str;
+        }
+        else if (token is TokenConstant<bool> tb)
+        {
+            boolValue = tb.value;
+            type = ExpressionType.Bool;
+        }
+    }
 }
 
 public static class TypeResolver

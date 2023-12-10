@@ -12,13 +12,13 @@ public enum TokenType
     //ConstantInt,
     //ConstantDouble,
     //ConstantString,
-    RefGlobalVar,
+    SetGlobalVar,
     RefLocalVar,
-    ValueGlobalVar,
+    GetGlobalVarValue,
     ValueLocalVar,
     Ret,
     Call,
-    ExpressionEnd // really nop, needed in IF and WHILE w/o (..)
+    EndOfExpression // needed as marker to evaluate operation in stack
 }
 
 public class Token
@@ -124,9 +124,9 @@ public class CompiledCode
     {
         tokens.Add(new Token(TokenType.Ret));
     }
-    public void AddExpressionEnd()
+    public void AddEndOfExpression()
     {
-        tokens.Add(new Token(TokenType.ExpressionEnd));
+        tokens.Add(new Token(TokenType.EndOfExpression));
     }
     public void AddGoto(int toToken)
     {
@@ -141,14 +141,14 @@ public class CompiledCode
         tokens.Add(new TokenOperation(operation));
     }
 
-    public void AddGlobalVarValue(string name, VariableDef def)
+    public void AddGetGlobalVarValue(string name, VariableDef def)
     {
-        tokens.Add(new TokenVar(name, def, TokenType.ValueGlobalVar));
+        tokens.Add(new TokenVar(name, def, TokenType.GetGlobalVarValue));
     }
 
-    public void AddRefGlobalVar(string name, VariableDef def)
+    public void AddSetGlobalVar(string name, VariableDef def)
     {
-        tokens.Add(new TokenVar(name, def, TokenType.RefGlobalVar));
+        tokens.Add(new TokenVar(name, def, TokenType.SetGlobalVar));
     }
     public void AddString(string value)
     {

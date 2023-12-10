@@ -137,6 +137,8 @@ public class Analyzer
         if (!ParseChar(';'))
         {
             ParseExpression();
+            CompiledCode.AddEndOfExpression();
+
             if (!ParseChar(';'))
             {
                 StopOnError("Expected ';' "); return false;
@@ -154,8 +156,8 @@ public class Analyzer
         }
 
         ParseExpression();
+        CompiledCode.AddEndOfExpression();
 
-        CompiledCode.AddExpressionEnd(); // -1 just placeholder
         CompiledCode.AddGotoIf(-1); // -1 just placeholder
         var indexTokenWithGoto = CompiledCode.LastIndex;
 
@@ -189,6 +191,7 @@ public class Analyzer
         }
 
         ParseExpression();
+        CompiledCode.AddEndOfExpression();
 
         ParseBlock();
 
@@ -374,6 +377,7 @@ public class Analyzer
             position = 0;
             error = "";
             ParseExpression();
+            CompiledCode.AddEndOfExpression();
             if (!EndCode())
             {
                 error = "expected End Of Code.";
@@ -392,14 +396,15 @@ public class Analyzer
 
     private bool ParseExpression()
     {
-        if (ParseUnaryOperation())
-        {
-            if (!ParseOperand())
-            {
-                StopOnError("qqqError"); return false;
-            }
-        }
-        else if (!ParseOperand())
+        //if (ParseUnaryOperation())
+        //{
+        //    if (!ParseOperand())
+        //    {
+        //        StopOnError("qqqError"); return false;
+        //    }
+        //}
+        //else 
+        if (!ParseOperand())
         {
             return false;
         }
@@ -528,6 +533,7 @@ public class Analyzer
         }
 
         ParseExpression();
+        CompiledCode.AddEndOfExpression();
 
         if (!varOnly && !ParseChar(';'))
         {
@@ -536,7 +542,7 @@ public class Analyzer
 
         AddVar(name, _funcName);
         var def = GetVar(name, _funcName);
-        CompiledCode.AddRefGlobalVar(name, def);
+        CompiledCode.AddSetGlobalVar(name, def);
         return true;
     }
 
@@ -621,6 +627,8 @@ public class Analyzer
 
     private bool ParseOperand()
     {
+        ParseUnaryOperation();
+
         if (ParseChar('('))
         {
             CompiledCode.AddOperation("(");
@@ -709,7 +717,7 @@ public class Analyzer
             StopOnError("Underfined variable: {" + name + "}"); return false;
         }
 
-        CompiledCode.AddGlobalVarValue(name, def);
+        CompiledCode.AddGetGlobalVarValue(name, def);
 
         return true;
     }
@@ -728,6 +736,7 @@ public class Analyzer
         while (!EndCode())
         {
             ParseExpression();
+            CompiledCode.AddEndOfExpression();
 
             argcount++;
 

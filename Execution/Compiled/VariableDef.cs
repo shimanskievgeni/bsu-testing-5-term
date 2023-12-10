@@ -2,11 +2,6 @@
 
 public class VariableDef
 {
-    public VariableDef()
-    {
-        Name = "Undefined";
-    }
-
     public VariableDef(string name)
     {
         Name = name;
@@ -18,18 +13,16 @@ public class VariableDef
     //    this.Value = value;
     //}
 
-    public string Name
-    {
-        get;
-        set;
-    }
+    public string Name  { get; set; }
 
-    public int intValue;
-    public double doubleValue;
-    public string? stringValue;
-    public bool boolValue;
+    public TypedValue typedValue = new TypedValue();
 
-    public ExpressionType type;
+    //public int intValue;
+    //public double doubleValue;
+    //public string? stringValue;
+    //public bool boolValue;
+
+    //public ExpressionType type;
 
     //public VariableDef Clone()
     //{

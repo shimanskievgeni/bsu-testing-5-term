@@ -6,7 +6,7 @@ using Execution.SyntaxAnalyze;
 namespace Execution;
 public static class Execution
 {
-    public static Token Exec(string source)
+    public static Token? Exec(string source)
     {
         var parser = new Analyzer(source);
 
@@ -16,7 +16,7 @@ public static class Execution
         return calculator.Compute();
     }
 
-    public static Token CalcExpression(string source)
+    public static Token? CalcExpression(string source)
     {
         var parser = new Analyzer(source);
 
