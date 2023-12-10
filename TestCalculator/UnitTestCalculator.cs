@@ -10,19 +10,6 @@ public class Tests
     {
     }
 
-    //[Test, Category("Positive scenario")]
-    //public void ComputesExpressionWithSingleNum()
-    //{
-    //    string expression = "2";
-
-    //    var actual = Execution.Exec(expression); //Calculator.Compute(expression);
-
-    //    //double actual = Execution.Exec(expression); //Calculator.Compute(expression);
-    //    double expected = 2;
-
-    //    Assert.That(actual, Is.EqualTo(expected));
-    //}
-
     [TestCase(".5", .5)]
     [TestCase("5.0", 5)]
     [TestCase("5.0e0", 5)]
@@ -39,6 +26,7 @@ public class Tests
     [TestCase("2.0+3", 5)]
     [TestCase("2.1+2.9", 5)]
     [TestCase("  2.1    +   2.9 ", 5)]
+    [TestCase("7.0 - .5 - .5 ", 6)]
     [TestCase("7.0 - 2", 5)]
     [TestCase("7 - 2.0", 5)]
     [TestCase("7.0 - 2.0", 5)]
@@ -134,6 +122,22 @@ public class Tests
                 else if (x < 5)   { return 15; }
                 else  { return 99; }
               """, 15)]
+    [TestCase("""
+              i = 0;
+              while i < 10 
+              {
+                i = i + 1; 
+              }
+              return i+0; 
+              """, 10)]
+    [TestCase("""
+              i = 0;
+              while (i < 10)
+              {
+                i = i + 1 - 2*0; 
+              }
+              return i*100; 
+              """, 1000)]
     public void TestExec(string expression, int expected)
     {
         Token? actual = Execution.Exec(expression); //Calculator.Compute(expression);

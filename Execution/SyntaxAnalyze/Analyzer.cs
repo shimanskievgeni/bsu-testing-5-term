@@ -159,27 +159,24 @@ public class Analyzer
         CompiledCode.AddEndOfExpression();
 
         CompiledCode.AddGotoIf(-1); // -1 just placeholder
-        var indexTokenWithGoto = CompiledCode.LastIndex;
+        var indexTokenToCorrect = CompiledCode.LastIndex;
 
         ParseBlock();
 
         if (ParseKeyWord("else"))
         {
-            (CompiledCode.tokens[indexTokenWithGoto] as TokenGoto).toToken = CompiledCode.LastIndex + 2;
+            (CompiledCode.tokens[indexTokenToCorrect] as TokenGoto).toToken = CompiledCode.LastIndex + 2;
             CompiledCode.AddGoto(-1); // -1 just placeholder
-            indexTokenWithGoto = CompiledCode.LastIndex;
+            indexTokenToCorrect = CompiledCode.LastIndex;
 
             if (!ParseIf())
             {
                 ParseBlock();
             }
+        }
 
-            (CompiledCode.tokens[indexTokenWithGoto] as TokenGoto).toToken = CompiledCode.LastIndex + 1;
-        }
-        else
-        {
-            (CompiledCode.tokens[indexTokenWithGoto] as TokenGoto).toToken = CompiledCode.LastIndex + 1;
-        }
+        (CompiledCode.tokens[indexTokenToCorrect] as TokenGoto).toToken = CompiledCode.LastIndex + 1;
+
         return true;
     }
 
@@ -190,10 +187,19 @@ public class Analyzer
             return false;
         }
 
+        var indexTokenStartWhile = CompiledCode.LastIndex + 1;
+
         ParseExpression();
         CompiledCode.AddEndOfExpression();
 
+        CompiledCode.AddGotoIf(-1); // -1 just placeholder
+        var indexTokenToCorrect = CompiledCode.LastIndex;
+
         ParseBlock();
+
+        (CompiledCode.tokens[indexTokenToCorrect] as TokenGoto).toToken = CompiledCode.LastIndex + 2;
+        
+        CompiledCode.AddGoto(indexTokenStartWhile); // loop
 
         return true;
 

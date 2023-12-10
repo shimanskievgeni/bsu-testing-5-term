@@ -110,7 +110,7 @@ public class Calculator
 
                 if (operators.Count != 0) operators.Pop();
             }
-            else
+            else // EndOfExpression
             {
                 var currentOperatorPriority = GetOperationPriority(suspect);
 
@@ -137,7 +137,9 @@ public class Calculator
         }
 
         Token tokenretval;
-
+        /*
+        TypedValue retval;
+        */
         if (operands.Count != 0)
         {
             tokenretval = operands.Pop();
@@ -492,10 +494,10 @@ public class Calculator
      ***********/
 
 
-    /// <summary>
-    /// Check if the given char is digit
-    /// </summary>
-    /// <param name="char">char to be determined</param>
-    /// <returns>true if the given char is digit, otherwise false</returns>
-    //private static bool IsDigit(char @char) => @char is >= '0' and <= '9';
-}
+        /// <summary>
+        /// Check if the given char is digit
+        /// </summary>
+        /// <param name="char">char to be determined</param>
+        /// <returns>true if the given char is digit, otherwise false</returns>
+        //private static bool IsDigit(char @char) => @char is >= '0' and <= '9';
+    }
