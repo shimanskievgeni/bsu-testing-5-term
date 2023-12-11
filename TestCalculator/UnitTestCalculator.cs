@@ -48,7 +48,8 @@ public class Tests
 
         const double tolerance = 1e-100;
 
-        Assert.That(Math.Abs((actualDouble??double.NaN) / expected - 1), Is.LessThanOrEqualTo(tolerance));
+        Assert.That(AlmostEquals((actualDouble ?? double.NaN), expected, tolerance));
+        // Assert.That(Math.Abs((actualDouble ?? double.NaN) / expected - 1), Is.LessThanOrEqualTo(tolerance));
     }
 
     [TestCase(" 2 +3 ", 5)]
@@ -156,7 +157,7 @@ public class Tests
               }
               return i*100; 
               """, 1000)]
-    public void TestExec(string expression, int expected)
+    public void TestExecInt(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
         var actualInt = actual?.intValue;
@@ -165,6 +166,36 @@ public class Tests
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }
+
+
+    [TestCase("""
+              i = 2;
+              j = i + i * 1.0; // 4.0
+              k = i * j;       // 8.0
+              k = -k / (-k) * -(0-k);
+              return k; // 8
+              """, 8)]
+    public void TestExecDouble (string expression, double expected)
+    {
+        TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
+        var actualDouble = actual?.doubleValue;
+
+        const double tolerance = 1e-100;
+
+        Assert.That(AlmostEquals((actualDouble ?? double.NaN), expected, tolerance));
+        // Assert.That(Math.Abs((actualDouble ?? double.NaN) / expected - 1), Is.LessThanOrEqualTo(tolerance));
+    }
+
+    public static bool AlmostEquals(double x, double y, double tolerance)
+    {
+    // https://roundwide.com/equality-comparison-of-floating-point-numbers-in-csharp/
+
+        var diff = Math.Abs(x - y);
+        return diff <= tolerance ||
+               diff <= Math.Max(Math.Abs(x), Math.Abs(y)) * tolerance;
+    }
+
+
     //[Test, Category("Positive scenario")]
     //public void ComputesWithPriority()
     //{

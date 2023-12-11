@@ -52,6 +52,7 @@ public struct TypedValue
         this.boolValue = source.boolValue;
     }
     
+    /****
     public void SetFrom(TokenConstantType token)
     {
         if (token is TokenConstant<int> ti)
@@ -75,6 +76,7 @@ public struct TypedValue
             type = ExpressionType.Bool;
         }
     }
+    ****/
 }
 
 public static class TypeResolver
