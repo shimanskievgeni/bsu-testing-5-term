@@ -69,16 +69,16 @@ public class Calculator
             }
             else if (token.Type == TokenType.Goto)
             {
-                i = (token as TokenGoto).toToken;
+                i = ((TokenGoto)token).toToken;
                 continue;
             }
             else if (token.Type == TokenType.GotoIf)
             {
                 //var val1 = (operands.Pop() as TokenConstant<bool>).value;
-                var val1 = (operands.Pop() as TokenTypedValue).typedValue.boolValue;
+                var val1 = ((TokenTypedValue)operands.Pop()).typedValue.boolValue;
                 if (!val1)
                 {
-                    i = (token as TokenGoto).toToken;
+                    i = ((TokenGoto)token).toToken;
                     continue;
                 }
             }
@@ -91,7 +91,7 @@ public class Calculator
             }
             else if (token.Type == TokenType.Operation)
             {
-                suspect = (token as TokenOperation).Operation;
+                suspect = ((TokenOperation)token).Operation;
             }
 
             if (suspect == "(")

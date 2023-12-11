@@ -165,7 +165,7 @@ public class Analyzer
 
         if (ParseKeyWord("else"))
         {
-            (CompiledCode.tokens[indexTokenToCorrect] as TokenGoto).toToken = CompiledCode.LastIndex + 2;
+            ((TokenGoto)CompiledCode.tokens[indexTokenToCorrect]).toToken = CompiledCode.LastIndex + 2;
             CompiledCode.AddGoto(-1); // -1 just placeholder
             indexTokenToCorrect = CompiledCode.LastIndex;
 
@@ -175,7 +175,7 @@ public class Analyzer
             }
         }
 
-        (CompiledCode.tokens[indexTokenToCorrect] as TokenGoto).toToken = CompiledCode.LastIndex + 1;
+        ((TokenGoto)CompiledCode.tokens[indexTokenToCorrect]).toToken = CompiledCode.LastIndex + 1;
 
         return true;
     }
@@ -197,7 +197,7 @@ public class Analyzer
 
         ParseBlock();
 
-        (CompiledCode.tokens[indexTokenToCorrect] as TokenGoto).toToken = CompiledCode.LastIndex + 2;
+        ((TokenGoto)CompiledCode.tokens[indexTokenToCorrect]).toToken = CompiledCode.LastIndex + 2;
         
         CompiledCode.AddGoto(indexTokenStartWhile); // loop
 
@@ -323,7 +323,7 @@ public class Analyzer
         functions.TryAdd(name, new FuncDef(name));
     }
 
-    private FuncDef GetFunc(string name)
+    private FuncDef? GetFunc(string name)
     {
         //return functions[name];
         if (functions.TryGetValue(name, out FuncDef? v))
@@ -548,7 +548,13 @@ public class Analyzer
 
         AddVar(name, _funcName);
         var def = GetVar(name, _funcName);
-        CompiledCode.AddSetGlobalVar(name, def);
+        if (def != null)
+            CompiledCode.AddSetGlobalVar(name, def);
+        else
+        {
+            StopOnError(@"Variable {name} is not found."); return false;
+        }
+
         return true;
     }
 

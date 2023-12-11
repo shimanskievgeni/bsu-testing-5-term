@@ -9,7 +9,7 @@ public enum TokenType
     Goto,
     GotoIf,
     Operation,
-    Constant,
+    //Constant,
     TokenTypedValue, // alternative to Constant
     //ConstantInt,
     //ConstantDouble,
@@ -55,7 +55,7 @@ public class TokenTypedValue : Token // not OOP style
     }
 }
 
-
+/***
 public class TokenConstantType : Token // alternative to TokenTypedType, much more OOP style
 {
     public readonly ExpressionType valueType;
@@ -66,7 +66,6 @@ public class TokenConstantType : Token // alternative to TokenTypedType, much mo
     }
 }
 
-/****/
 public class TokenConstant<T> : TokenConstantType
 {
     public readonly T? value;
@@ -76,35 +75,34 @@ public class TokenConstant<T> : TokenConstantType
         this.value = value;
     }
 }
-/****/
 
-/****
-public class TokenInt : TokenConstant
-{
-    public readonly int value;
-    public TokenInt(int value) : base(ExpressionType.Int) => this.value = value; 
-}
+//public class TokenInt : TokenConstant
+//{
+//    public readonly int value;
+//    public TokenInt(int value) : base(ExpressionType.Int) => this.value = value; 
+//}
 
-public class TokenDouble : TokenConstant
-{
-    public readonly double value;
+//public class TokenDouble : TokenConstant
+//{
+//    public readonly double value;
 
-    public TokenDouble(double value) : base(ExpressionType.Double) => this.value = value; 
-}
+//    public TokenDouble(double value) : base(ExpressionType.Double) => this.value = value; 
+//}
 
-public class TokenString : TokenConstant
-{
-    public readonly string value;
+//public class TokenString : TokenConstant
+//{
+//    public readonly string value;
 
-    public TokenString(string value) : base(ExpressionType.Str) => this.value = value; 
-}
+//    public TokenString(string value) : base(ExpressionType.Str) => this.value = value; 
+//}
 
-public class TokenBool : TokenConstant
-{
-    public readonly bool value;
+//public class TokenBool : TokenConstant
+//{
+//    public readonly bool value;
 
-    public TokenBool(bool value) : base(ExpressionType.Bool) => this.value = value;
-}
+//    public TokenBool(bool value) : base(ExpressionType.Bool) => this.value = value;
+//}
+//
 ****/
 
 public class TokenOperation : Token
@@ -120,15 +118,14 @@ public class TokenOperation : Token
 
 public class TokenVar : Token
 {
-    public string name { get; private set; }
-    public VariableDef def { get; private set; }
+    public readonly string name; // { get; private set; }
+    public readonly VariableDef def; // { get; private set; }
 
     public TokenVar(string name, VariableDef def, TokenType type) : base(type)
     {
         this.name = name;
         this.def = def;
     }
-
 }
 
 public class TokenGoto : Token
