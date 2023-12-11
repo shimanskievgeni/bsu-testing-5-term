@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+﻿using Execution.Compiled;
+using System.Xml.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Execution.Compiled;
@@ -9,6 +10,7 @@ public enum TokenType
     GotoIf,
     Operation,
     Constant,
+    TokenTypedValue, // alternative to Constant
     //ConstantInt,
     //ConstantDouble,
     //ConstantString,
@@ -29,7 +31,32 @@ public class Token
     { Type = type; }
 }
 
-public class TokenConstantType : Token
+public class TokenTypedValue : Token // not OOP style
+{
+    public TypedValue typedValue = new TypedValue(); // struct, not object!
+
+    public TokenTypedValue() : base(TokenType.TokenTypedValue) { }
+    public TokenTypedValue(int value) : base(TokenType.TokenTypedValue) 
+    { typedValue.SetValue(value); }
+    public TokenTypedValue(double value) : base(TokenType.TokenTypedValue)
+    {
+        typedValue.doubleValue = value;
+        typedValue.type = ExpressionType.Double;
+    }
+    public TokenTypedValue(string value) : base(TokenType.TokenTypedValue)
+    {
+        typedValue.stringValue = value;
+        typedValue.type = ExpressionType.Str;
+    }
+    public TokenTypedValue(bool value) : base(TokenType.TokenTypedValue)
+    {
+        typedValue.boolValue = value;
+        typedValue.type = ExpressionType.Bool;
+    }
+}
+
+
+public class TokenConstantType : Token // alternative to TokenTypedType, much more OOP style
 {
     public readonly ExpressionType valueType;
 
@@ -150,6 +177,13 @@ public class CompiledCode
     {
         tokens.Add(new TokenVar(name, def, TokenType.SetGlobalVar));
     }
+
+    public void AddInt(int value) => tokens.Add(new TokenTypedValue(value));
+    public void AddDouble(double value) => tokens.Add(new TokenTypedValue(value));
+    public void AddString(string value) => tokens.Add(new TokenTypedValue(value));
+    public void AddBool(bool value) => tokens.Add(new TokenTypedValue(value));
+
+    /**
     public void AddString(string value)
     {
         tokens.Add(new TokenConstant<string>(value, ExpressionType.Str));
@@ -172,5 +206,6 @@ public class CompiledCode
         tokens.Add(new TokenConstant<bool>(value, ExpressionType.Bool));
         //this.tokens.Add(new TokenBool(value));
     }
+    **/
 }
 

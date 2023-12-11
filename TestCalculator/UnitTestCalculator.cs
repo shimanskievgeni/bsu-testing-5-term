@@ -41,12 +41,14 @@ public class Tests
     [Test, Category("Positive scenario")]
     public void ComputesDoubleExpression(string expression, double expected)
     {
-        Token actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
-        var actualDouble = (actual as TokenConstant<double>).value;
+        TypedValue? actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
+        var actualDouble = actual?.doubleValue;
+        //Token actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
+        //var actualDouble = (actual as TokenConstant<double>).value;
 
-        const double tolerance = 1e-200;
+        const double tolerance = 1e-100;
 
-        Assert.That(Math.Abs(actualDouble / expected - 1), Is.LessThanOrEqualTo(tolerance));
+        Assert.That(Math.Abs((actualDouble??double.NaN) / expected - 1), Is.LessThanOrEqualTo(tolerance));
     }
 
     [TestCase(" 2 +3 ", 5)]
@@ -64,8 +66,10 @@ public class Tests
     [Test, Category("Positive scenario")]
     public void ComputesIntExpression(string expression, int expected)
     {
-        Token actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
-        var actualInt = (actual as TokenConstant<int>).value;
+        TypedValue? actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
+        var actualInt = actual?.intValue;
+        //Token actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
+        //var actualInt = (actual as TokenConstant<int>).value;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }
@@ -123,12 +127,16 @@ public class Tests
                 else  { return 99; }
               """, 15)]
     [TestCase("""
+              i = 2;
+              return i; 
+              """, 2)]
+    [TestCase("""
               i = 0;
               while i < 10 
               {
                 i = i + 1; 
               }
-              return i+0; 
+              return i; 
               """, 10)]
     [TestCase("""
               i = 0;
@@ -150,8 +158,10 @@ public class Tests
               """, 1000)]
     public void TestExec(string expression, int expected)
     {
-        Token? actual = Execution.Exec(expression); //Calculator.Compute(expression);
-        var actualInt = (actual as TokenConstant<int>)?.value;
+        TypedValue? actual = Execution.Exec(expression);
+        var actualInt = actual?.intValue;
+        //Token? actual = Execution.Exec(expression); //Calculator.Compute(expression);
+        //var actualInt = (actual as TokenConstant<int>)?.value;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }

@@ -20,11 +20,12 @@ public class Calculator
         this.compiledCode = compiledCode;
     }
 
-    private static void Assign(Stack<Token> operands, TokenVar token)
+    private static void Assign(Stack<Token> operands, TokenVar? token)
     {
         var left = operands.Pop();
 
-        token.def.typedValue.SetFrom((left as TokenConstantType));
+        token?.def.typedValue.Copy(GetTypedValue(left)); // struct, copy by value
+        //token?.def.typedValue.SetFrom((left as TokenConstantType));
     }
 
     public static void ComputeOnTheTop(Stack<Token> operands, Stack<string> operators)
@@ -42,7 +43,7 @@ public class Calculator
         operands.Push(Operate(val1, val2, op));
     }
 
-    public Token Compute()
+    public TypedValue? Compute()
     {
         if (compiledCode?.tokens == null)
             return null;
@@ -73,7 +74,8 @@ public class Calculator
             }
             else if (token.Type == TokenType.GotoIf)
             {
-                var val1 = (operands.Pop() as TokenConstant<bool>).value;
+                //var val1 = (operands.Pop() as TokenConstant<bool>).value;
+                var val1 = (operands.Pop() as TokenTypedValue).typedValue.boolValue;
                 if (!val1)
                 {
                     i = (token as TokenGoto).toToken;
@@ -96,7 +98,7 @@ public class Calculator
             {
                 operators.Push(suspect);
             }
-            else if (token.Type == TokenType.Constant
+            else if (token.Type == TokenType.TokenTypedValue // TokenType.Constant
                   || token.Type == TokenType.GetGlobalVarValue)
             {
                 operands.Push(token);
@@ -136,24 +138,24 @@ public class Calculator
             throw new InvalidOperationException($"operators stack is not empty at the end: {op}");
         }
 
-        Token tokenretval;
-        /*
-        TypedValue retval;
-        */
+        TypedValue retval = new(); // struct
+        // TokenTypedValue tokenretval;
+
         if (operands.Count != 0)
         {
-            tokenretval = operands.Pop();
+            retval = GetTypedValue(operands.Pop());
         }
         else
         {
-            tokenretval = new TokenConstant<int>(0, ExpressionType.Int);
+            retval.SetValue(0); 
+            //tokenretval = new TokenConstant<int>(0, ExpressionType.Int);
         }
         if (operands.Count > 1)
         {
             throw new InvalidOperationException($"operands stack is not empty at the end: ((op))");
         }
 
-        return tokenretval;
+        return retval;
     }
 
 
@@ -164,7 +166,176 @@ public class Calculator
         return false;
     }
 
-    private static TokenConstantType Operate(Token left, Token? right, string operation)
+    private static TypedValue GetTypedValue(Token token)
+    {
+        TypedValue typedValue;
+
+        if (token is TokenVar tvar)
+        {
+            typedValue = tvar.def.typedValue;
+        }
+        else if (token is TokenTypedValue tv)
+        {
+            typedValue = tv.typedValue;
+        }
+        else
+        {
+            throw new InvalidOperationException($"Invalid operand token type: {token.Type} ");
+        }
+        return typedValue;
+    }
+
+    private static TokenTypedValue Operate(Token left, Token? right, string operation)
+    {
+        TypedValue typedValue1 = GetTypedValue(left);
+        TypedValue typedValue2;
+        if (right != null)
+        {
+            typedValue2 = GetTypedValue(right);
+        }
+        else
+            typedValue2 = new TypedValue(); // just init struct fields;
+
+        var resultType = TypeResolver.ResultingOperationType(operation, typedValue1.type, typedValue2.type);
+        if (resultType == ExpressionType.Undefined)
+            throw new InvalidOperationException($"Incompatible types: {operation} {typedValue1.type} {typedValue2.type} ");
+
+        int intRes = 0;
+        double doubleRes = 0;
+        string? stringRes = "";
+        bool boolRes = false;
+        bool err = false;
+
+        if (typedValue1.type == ExpressionType.Double || typedValue2.type == ExpressionType.Double)
+        {
+            if (typedValue1.type == ExpressionType.Int)
+            {
+                typedValue1.doubleValue = typedValue1.intValue;
+            }
+            else if (typedValue2.type == ExpressionType.Int)
+            {
+                typedValue2.doubleValue = typedValue2.intValue;
+            }
+        }
+
+        if (resultType == ExpressionType.Bool)
+        {
+            if (operation == "!" && typedValue1.type == ExpressionType.Bool)
+                boolRes = !typedValue1.boolValue;
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Bool)
+            {
+                if (operation == "&&") boolRes = typedValue1.boolValue && typedValue2.boolValue;
+                else if (operation == "||") boolRes = typedValue1.boolValue || typedValue2.boolValue;
+                else err = true;
+            }
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Int)
+            {
+                if (operation == "==") boolRes = typedValue1.intValue == typedValue2.intValue;
+                else if (operation == "!=") boolRes = typedValue1.intValue != typedValue2.intValue;
+                else if (operation == "<=") boolRes = typedValue1.intValue <= typedValue2.intValue;
+                else if (operation == ">=") boolRes = typedValue1.intValue >= typedValue2.intValue;
+                else if (operation == "<") boolRes = typedValue1.intValue < typedValue2.intValue;
+                else if (operation == ">") boolRes = typedValue1.intValue > typedValue2.intValue;
+                else err = true;
+            }
+            else if (typedValue1.type == ExpressionType.Double || typedValue2.type == ExpressionType.Double)
+            {
+                if (operation == "==") boolRes = typedValue1.doubleValue == typedValue2.doubleValue;
+                else if (operation == "!=") boolRes = typedValue1.doubleValue != typedValue2.doubleValue;
+                else if (operation == "<=") boolRes = typedValue1.doubleValue <= typedValue2.doubleValue;
+                else if (operation == ">=") boolRes = typedValue1.doubleValue >= typedValue2.doubleValue;
+                else if (operation == "<") boolRes = typedValue1.doubleValue < typedValue2.doubleValue;
+                else if (operation == ">") boolRes = typedValue1.doubleValue > typedValue2.doubleValue;
+                else err = true;
+            }
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Str)
+            {
+                if (operation == "==") boolRes = typedValue1.stringValue == typedValue2.stringValue;
+                else if (operation == "!=") boolRes = typedValue1.stringValue != typedValue2.stringValue;
+                else if (operation == "<=") boolRes = typedValue1.stringValue?.CompareTo(typedValue2.stringValue) <= 0;
+                else if (operation == ">=") boolRes = typedValue1.stringValue?.CompareTo(typedValue2.stringValue) >= 0;
+                else if (operation == "<") boolRes = typedValue1.stringValue?.CompareTo(typedValue2.stringValue) < 0;
+                else if (operation == ">") boolRes = typedValue1.stringValue?.CompareTo(typedValue2.stringValue) > 0;
+                else err = true;
+            }
+            else
+            {
+                err = true;
+            }
+        }
+        else if (resultType == ExpressionType.Int)
+        {
+            if (typedValue1.type == ExpressionType.Int && operation == "Unary-")
+            {
+                intRes = -typedValue1.intValue;
+            }
+            else if (typedValue1.type == ExpressionType.Int && operation == "Unary+")
+            {
+                intRes = +typedValue1.intValue;
+            }
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Int)
+            {
+                if (operation == "+") intRes = typedValue1.intValue + typedValue2.intValue;
+                else if (operation == "-") intRes = typedValue1.intValue - typedValue2.intValue;
+                else if (operation == "*") intRes = typedValue1.intValue * typedValue2.intValue;
+                else if (operation == "/") intRes = typedValue1.intValue / typedValue2.intValue;
+                else if (operation == "%") intRes = typedValue1.intValue % typedValue2.intValue;
+                else err = true;
+            }
+            else err = true;
+        }
+        else if (resultType == ExpressionType.Double)
+        {
+            if (typedValue1.type == ExpressionType.Double && operation == "Unary-")
+            {
+                doubleRes = -typedValue1.doubleValue;
+            }
+            else if (typedValue1.type == ExpressionType.Double && operation == "Unary+")
+            {
+                doubleRes = +typedValue1.doubleValue;
+            }
+            else if (operation == "+") doubleRes = typedValue1.doubleValue + typedValue2.doubleValue;
+            else if (operation == "-") doubleRes = typedValue1.doubleValue - typedValue2.doubleValue;
+            else if (operation == "*") doubleRes = typedValue1.doubleValue * typedValue2.doubleValue;
+            else if (operation == "/") doubleRes = typedValue1.doubleValue / typedValue2.doubleValue;
+            else err = true;
+        }
+        else if (resultType == ExpressionType.Str)
+        {
+            if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Str)
+                if (operation == "+") stringRes = typedValue1.stringValue + typedValue2.stringValue;
+                else err = true;
+        }
+        else
+        {
+            err = true;
+        }
+
+        if (err)
+        {
+            throw new InvalidOperationException($"Invalid operation: {operation} {typedValue1.type} {typedValue2.type} ");
+        }
+
+        TokenTypedValue resToken;
+
+        if (resultType == ExpressionType.Bool)
+            resToken = new TokenTypedValue(boolRes);
+        else if (resultType == ExpressionType.Int)
+            resToken = new TokenTypedValue(intRes);
+        else if (resultType == ExpressionType.Double)
+            resToken = new TokenTypedValue(doubleRes);
+        else if (resultType == ExpressionType.Str)
+            resToken = new TokenTypedValue(stringRes);
+        else
+        {
+            throw new InvalidOperationException($"Invalid operation result type: {operation} {typedValue1.type} {typedValue2.type} {resultType} ");
+        }
+
+        return resToken;
+    }
+
+    /***
+    private static TokenConstantType TokenConstantType_Operate(Token left, Token? right, string operation)
     {
         //if (left.Type == TokenType.Constant && right.Type == TokenType.Constant)
         //{
@@ -376,7 +547,7 @@ public class Calculator
 
         return resToken;
     }
-
+    ****/
     private static int GetOperationPriority(string operation) =>
     operation switch
     {

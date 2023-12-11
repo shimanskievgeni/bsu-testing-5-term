@@ -21,6 +21,37 @@ public struct TypedValue
     {
         type = ExpressionType.Undefined;
     }
+
+    public void SetValue(int value)
+    {
+        intValue = value;
+        type = ExpressionType.Int;
+    }
+    public void SetValue(double value)
+    {
+        doubleValue = value;
+        type = ExpressionType.Double;
+    }
+    public void SetValue(string value)
+    {
+        stringValue = value;
+        type = ExpressionType.Str;
+    }
+    public void SetValue(bool value)
+    {
+        boolValue = value;
+        type = ExpressionType.Bool;
+    }
+
+    public void Copy(TypedValue source)
+    {
+        this.type = source.type;
+        this.intValue = source.intValue;
+        this.doubleValue = source.doubleValue;
+        this.stringValue = source.stringValue;  
+        this.boolValue = source.boolValue;
+    }
+    
     public void SetFrom(TokenConstantType token)
     {
         if (token is TokenConstant<int> ti)
