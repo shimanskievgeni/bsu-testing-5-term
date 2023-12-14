@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Reflection.Metadata.Ecma335;
+using System.Text;
+using System.Xml.Linq;
 using Execution.Compiled;
 
 namespace Execution.SyntaxAnalyze;
@@ -88,6 +90,8 @@ public class Analyzer
         }
         while (f);
 
+        var codeIndexBeforeFunction = CompiledCode.AddUndefinedGoto();
+        
         do
         {
             f = ParseFunction();
@@ -95,6 +99,8 @@ public class Analyzer
         while (f);
 
         // top level statements
+        CompiledCode.DefineGoto(codeIndexBeforeFunction, CompiledCode.LastIndex + 1);
+
         ParseOperators();
 
         f = EndCode();
@@ -158,16 +164,14 @@ public class Analyzer
         ParseExpression();
         CompiledCode.AddEndOfExpression();
 
-        CompiledCode.AddGotoIf(-1); // -1 just placeholder
-        var indexTokenToCorrect = CompiledCode.LastIndex;
+        var indexTokenToCorrect = CompiledCode.AddUndefinedGotoIf();
 
         ParseBlock();
 
         if (ParseKeyWord("else"))
         {
-            ((TokenGoto)CompiledCode.tokens[indexTokenToCorrect]).toToken = CompiledCode.LastIndex + 2;
-            CompiledCode.AddGoto(-1); // -1 just placeholder
-            indexTokenToCorrect = CompiledCode.LastIndex;
+            CompiledCode.DefineGoto(indexTokenToCorrect, CompiledCode.LastIndex + 2);
+            indexTokenToCorrect = CompiledCode.AddUndefinedGoto();
 
             if (!ParseIf())
             {
@@ -175,7 +179,7 @@ public class Analyzer
             }
         }
 
-        ((TokenGoto)CompiledCode.tokens[indexTokenToCorrect]).toToken = CompiledCode.LastIndex + 1;
+        CompiledCode.DefineGoto(indexTokenToCorrect, CompiledCode.LastIndex + 1);
 
         return true;
     }
@@ -192,13 +196,11 @@ public class Analyzer
         ParseExpression();
         CompiledCode.AddEndOfExpression();
 
-        CompiledCode.AddGotoIf(-1); // -1 just placeholder
-        var indexTokenToCorrect = CompiledCode.LastIndex;
+        var indexTokenToCorrect = CompiledCode.AddUndefinedGotoIf();
 
         ParseBlock();
 
-        ((TokenGoto)CompiledCode.tokens[indexTokenToCorrect]).toToken = CompiledCode.LastIndex + 2;
-        
+        CompiledCode.DefineGoto(indexTokenToCorrect, CompiledCode.LastIndex + 2);
         CompiledCode.AddGoto(indexTokenStartWhile); // loop
 
         return true;
@@ -267,29 +269,26 @@ public class Analyzer
         return true;
     }
 
-    private int ParseFunctionHeader()
+    private bool ParseFunctionHeader()
     {
-        /*
-        var func = GetVar(funcName);
-        if (func.Operation != "func")
-        {
-            return false;
-        }
-        */
-
-        string? funcName = ParseVariable();
+        string? funcName = ParseName();
         if (funcName == null)
         {
-            StopOnError("qqqError"); return -1;
+            StopOnError("Expected function name."); return false;
         }
+        if (GetFunc(funcName) != null) 
+        {
+            StopOnError(@"Duplicated function name: {name}."); return false;
+        }
+
         _funcName = funcName;
 
         if (!ParseChar('('))
         {
-            StopOnError("qqqError"); return -1;
+            StopOnError("Expected '('"); return false;
         }
 
-        AddFunc(_funcName);
+        var funcDef = AddFunc(_funcName);
 
         int argcount = 0;
         string? name;
@@ -298,29 +297,36 @@ public class Analyzer
         {
             do
             {
-                name = ParseVariable();
+                name = ParseName();
                 if (name == null)
                 {
-                    StopOnError("qqqError"); return -1;
+                    StopOnError("Expected parameter name."); return false;
                 }
 
-                AddFuncVar(name, funcName);
+                var def = AddFuncVar(name, funcName);
 
                 argcount++;
 
             } while (ParseChar(','));
-        }
 
-        if (!ParseChar(')'))
-        {
-            StopOnError("qqqError"); return -1;
+            if (!ParseChar(')'))
+            {
+                StopOnError("Expected ')'."); return false;
+            }
         }
-        return argcount;
+        return true;
     }
 
-    private void AddFunc(string name)
+    private FuncDef? AddFunc(string name)
     {
-        functions.TryAdd(name, new FuncDef(name));
+        if (functions.TryGetValue(name, out FuncDef? def))
+            return def;
+
+        def = new FuncDef();
+        if (functions.TryAdd(name, def))
+            return def;
+        else
+            return null;
     }
 
     private FuncDef? GetFunc(string name)
@@ -332,18 +338,37 @@ public class Analyzer
             return null;
     }
 
-    private void AddVar(string name, string? funcName = null)
+    private VariableDef? AddVar(string name, string? funcName = null)
     {
         if (funcName == null)
-            variables.TryAdd(name, new VariableDef(name));
+        {
+            if (variables.TryGetValue(name, out VariableDef? def))
+                return def;
+
+            def = new GlobalVariableDef();
+            if (variables.TryAdd(name, def))
+                return def;
+            else
+                return null;
+        }
         else
-            AddFuncVar(name, funcName);
+        {
+            return AddFuncVar(name, funcName);
+        }
     }
 
-    private void AddFuncVar(string name, string funcName)
+    private VariableDef? AddFuncVar(string name, string funcName)
     {
         var localVars = functions[funcName].localVariables;  // functions.TryGetValue(funcName, out _);
-        localVars.TryAdd(name, new VariableDef(name));
+
+        if (localVars.TryGetValue(name, out VariableDef? def))
+            return def;
+
+        def = new LocalVariableDef();
+        if (localVars.TryAdd(name, new LocalVariableDef()))
+            return def;
+        else
+            return null;
     }
 
     private VariableDef? GetVar(string name, string? funcName)
@@ -367,11 +392,7 @@ public class Analyzer
     {
         SkipBlanks();
 
-        if (position == expression.Length)
-        {
-            return true;
-        }
-        return false;
+        return (position == expression.Length);
     }
 
 
@@ -475,7 +496,7 @@ public class Analyzer
 
             if (!ParseChar('\''))
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Expected string literal."); return false;
             }
         }
         else
@@ -496,18 +517,18 @@ public class Analyzer
 
                 if (position >= expression.Length)
                 {
-                    StopOnError("qqqError"); return false;
+                    StopOnError("Unexpected end of string literal."); return false;
                 }
 
                 if (!EscapedSymbols.Contains(CurrentChar()))
                 {
-                    StopOnError("qqqError"); return false;
+                    StopOnError(@"Symbol {CurrentChar()} cannot be escaped."); return false;
                 }
             }
             else if (CurrentChar() == '\'')
             {
-                position++;
                 str = expression[p1..position];
+                position++;
                 return true;
             }
 
@@ -521,7 +542,7 @@ public class Analyzer
     // is used also in var declaration
     private bool ParseAssigment(bool varOnly = false)
     {
-        string? name = ParseVariable();
+        string? name = ParseName();
 
         if (name == null)
         {
@@ -543,11 +564,10 @@ public class Analyzer
 
         if (!varOnly && !ParseChar(';'))
         {
-            StopOnError("qqqError"); return false;
+            StopOnError("Expected ';'"); return false;
         }
 
-        AddVar(name, _funcName);
-        var def = GetVar(name, _funcName);
+        var def = AddVar(name, _funcName);
         if (def != null)
             CompiledCode.AddSetGlobalVar(name, def);
         else
@@ -697,27 +717,33 @@ public class Analyzer
             return true;
         }
 
-        string? name = ParseVariable();
+        if (ParseKeyWord("true"))
+        {
+            CompiledCode.AddBool(true);
+            return true;
+        }
+
+        if (ParseKeyWord("false"))
+        {
+            CompiledCode.AddBool(false);
+            return true;
+        }
+
+        string? name = ParseName();
 
         if (name == null)
         {
-            StopOnError("qqqError"); return false;
+            StopOnError("Exptected operand."); return false;
         }
 
         if (ParseChar('(')) // function call, not var
         {
-            if (GetFunc(name) == null)
-            {
-                StopOnError("qqqError"); return false;
-            }
-
-            ParseArguments(name);
+            ParseCall(name);
 
             if (!ParseChar(')'))
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Expected ')'."); return false;
             }
-
 
             return true;
         }
@@ -726,7 +752,7 @@ public class Analyzer
 
         if (def == null)
         {
-            StopOnError("Underfined variable: {" + name + "}"); return false;
+            StopOnError(@"Undefined variable name: {name}."); return false;
         }
 
         CompiledCode.AddGetGlobalVarValue(name, def);
@@ -734,15 +760,24 @@ public class Analyzer
         return true;
     }
 
+    public bool ParseCall(string name) 
+    {
+        var def = GetFunc(name);
+
+        if (def == null)
+        {
+            StopOnError(@"Undefined function name: {name}."); return false;
+        }
+
+        CompiledCode.AddOperation("PrepareCall"); // just marker with priority -1
+        ParseArguments(name);
+        CompiledCode.AddCall(def);
+
+        return true;
+    }
+
     private bool ParseArguments(string funcName)
     {
-        /*
-        var func = GetVar(funcName);
-        if (func.Operation != "func")
-        {
-            return false;
-        }
-        */
         int argcount = 0;
 
         while (!EndCode())
@@ -832,7 +867,7 @@ public class Analyzer
         return false;
     }
 
-    private string? ParseVariable()
+    private string? ParseName()
     {
         SkipBlanks();
         if (position >= expression.Length)

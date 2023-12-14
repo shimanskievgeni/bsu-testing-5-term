@@ -26,7 +26,7 @@ public class Tests
     [TestCase("2.0+3", 5)]
     [TestCase("2.1+2.9", 5)]
     [TestCase("  2.1    +   2.9 ", 5)]
-    [TestCase("7.0 - .5 - .5 ", 6)]
+    [TestCase("7.0 - .4 - .6 ", 6)]
     [TestCase("7.0 - 2", 5)]
     [TestCase("7 - 2.0", 5)]
     [TestCase("7.0 - 2.0", 5)]
@@ -76,6 +76,7 @@ public class Tests
     }
 
     [TestCase("x = 1;", 0)]
+    [TestCase("return;", 0)]
     [TestCase("return 1;", 1)]
     [TestCase("return 1+1;", 2)]
     [TestCase("return -1+2;", 1)]
@@ -157,12 +158,49 @@ public class Tests
               }
               return i*100; 
               """, 1000)]
+    [TestCase("""
+              i = 0;
+              while (i < 100)
+              {
+                i = i + 1 - 2*0; 
+                if i == 20 { 
+                    return; 
+                }
+              }
+              return 100; 
+              """, 0)]
+    [TestCase("""
+              i = 0;
+              while (i < 100)
+              {
+                i = i + 1 - 2*0; 
+                if i % 50 > 40 + 1.0 { 
+                    return i % 50; 
+                }
+              }
+              return 100; 
+              """, 42)]
     public void TestExecInt(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
         var actualInt = actual?.intValue;
         //Token? actual = Execution.Exec(expression); //Calculator.Compute(expression);
         //var actualInt = (actual as TokenConstant<int>)?.value;
+
+        Assert.That(actualInt, Is.EqualTo(expected));
+    }
+
+    [TestCase("""
+              function f()
+              {
+                return 5; 
+              }
+              return 100; 
+              """, 100)]
+    public void TestExecFunc(string expression, int expected)
+    {
+        TypedValue? actual = Execution.Exec(expression);
+        var actualInt = actual?.intValue;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }
@@ -175,15 +213,79 @@ public class Tests
               k = -k / (-k) * -(0-k);
               return k; // 8
               """, 8)]
-    public void TestExecDouble (string expression, double expected)
+    [TestCase("""
+              k = 8.0;
+              if k != 8 {
+                k = 11;
+              }
+              if -k != -8 {
+                k = 12;
+              }
+              return k; // 8
+              """, 8)]
+    public void TestExecDouble(string expression, double expected)
     {
         TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
         var actualDouble = actual?.doubleValue;
 
         const double tolerance = 1e-100;
 
+        // both absolute and relative diffs
         Assert.That(AlmostEquals((actualDouble ?? double.NaN), expected, tolerance));
+
+        // only absolute diff
+        // Assert.That(Math.Abs((actualDouble ?? double.NaN - expected), Is.LessThanOrEqualTo(tolerance));
+
+        // only relative diff
         // Assert.That(Math.Abs((actualDouble ?? double.NaN) / expected - 1), Is.LessThanOrEqualTo(tolerance));
+    }
+
+    [TestCase("""
+              str = 'this is string';
+              return str;
+              """, "this is string")]
+    [TestCase("""
+              str = 'this is string';
+              if str != 'this is string' {
+                str = 'wtf?';
+              }
+              return str;
+              """, "this is string")]
+    [TestCase("""
+              str1 = 'string1';
+              str2 = 'string2';
+              if str1 != str2 {
+                str3 = 'wtf?';
+              }
+              return str1 + str2;
+              """, "string1string2")]
+    [TestCase("""
+              str1 = 'string';
+              str2 = 'string2';
+              if str2 == str1 + '2' {
+                return 'ok2';
+              }
+              return str1 + str2;
+              """, "ok2")]
+    [TestCase("""
+              str1 = 'string';
+              str2 = 'string2';
+              if str2 + '34' == str1 + '2' + '34' {
+                return 'ok234';
+              }
+              return str1 + str2;
+              """, "ok234")]
+    [TestCase("""
+              str1 = 'string1';
+              str2 = 'string2';
+              return str1 + ' ' + str2;
+              """, "string1 string2")]
+    public void TestExecString(string expression, string expected)
+    {
+        TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
+        var actualString = actual?.stringValue;
+
+        Assert.That(actualString, Is.EqualTo(expected));
     }
 
     public static bool AlmostEquals(double x, double y, double tolerance)
@@ -194,8 +296,7 @@ public class Tests
         return diff <= tolerance ||
                diff <= Math.Max(Math.Abs(x), Math.Abs(y)) * tolerance;
     }
-
-
+    
     //[Test, Category("Positive scenario")]
     //public void ComputesWithPriority()
     //{

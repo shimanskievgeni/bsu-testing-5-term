@@ -20,7 +20,8 @@ public enum TokenType
     ValueLocalVar,
     Ret,
     Call,
-    EndOfExpression // needed as marker to evaluate operation in stack
+    EndOfExpression, // needed as marker with priority 0 to evaluate operations in stack (...expression... {  } )
+    PrepareCall // needed as marker with priority = -10 to stop pop operation until return from function
 }
 
 public class Token
@@ -36,23 +37,16 @@ public class TokenTypedValue : Token // not OOP style
     public TypedValue typedValue = new TypedValue(); // struct, not object!
 
     public TokenTypedValue() : base(TokenType.TokenTypedValue) { }
-    public TokenTypedValue(int value) : base(TokenType.TokenTypedValue) 
-    { typedValue.SetValue(value); }
-    public TokenTypedValue(double value) : base(TokenType.TokenTypedValue)
+
+    public TokenTypedValue(TypedValue typedValue) : base(TokenType.TokenTypedValue)
     {
-        typedValue.doubleValue = value;
-        typedValue.type = ExpressionType.Double;
+        this.typedValue = typedValue;
     }
-    public TokenTypedValue(string value) : base(TokenType.TokenTypedValue)
-    {
-        typedValue.stringValue = value;
-        typedValue.type = ExpressionType.Str;
-    }
-    public TokenTypedValue(bool value) : base(TokenType.TokenTypedValue)
-    {
-        typedValue.boolValue = value;
-        typedValue.type = ExpressionType.Bool;
-    }
+
+    public TokenTypedValue(int value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value); 
+    public TokenTypedValue(double value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value);
+    public TokenTypedValue(string value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value); 
+    public TokenTypedValue(bool value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value); 
 }
 
 /***
@@ -116,12 +110,37 @@ public class TokenOperation : Token
 
 }
 
+public class TokenCall : Token
+{
+    //public readonly string name; // { get; private set; }
+    //public readonly VariableDef def; // { get; private set; }
+
+    public readonly int toToken; // { get; private set; }
+
+    public TokenCall(int toToken) : base(TokenType.Call)
+    {
+        this.toToken = toToken;
+    }
+}
+
 public class TokenVar : Token
 {
     public readonly string name; // { get; private set; }
     public readonly VariableDef def; // { get; private set; }
 
     public TokenVar(string name, VariableDef def, TokenType type) : base(type)
+    {
+        this.name = name;
+        this.def = def;
+    }
+}
+
+public class TokenFunc : Token
+{
+    public readonly string name; // { get; private set; }
+    public readonly FuncDef def; // { get; private set; }
+
+    public TokenFunc(string name, FuncDef def, TokenType type) : base(type)
     {
         this.name = name;
         this.def = def;
@@ -144,6 +163,8 @@ public class CompiledCode
     public readonly IList<Token> tokens = new List<Token>();
 
     public int LastIndex { get => tokens.Count - 1; }
+    //public int startIndex = -1; // undefined
+
     public void AddReturn()
     {
         tokens.Add(new Token(TokenType.Ret));
@@ -160,6 +181,21 @@ public class CompiledCode
     {
         tokens.Add(new TokenGoto(TokenType.GotoIf, toToken));
     }
+    public int AddUndefinedGoto() // useful to set up goto later
+    {
+        AddGoto(-1); // -1 just placeholder
+        return LastIndex;
+    }
+    public int AddUndefinedGotoIf() // useful to set up goto later
+    {
+        AddGotoIf(-1); // -1 just placeholder
+        return LastIndex;
+    }
+    public void DefineGoto(int fromIndex, int toIndex) 
+    {
+        ((TokenGoto)(tokens[fromIndex])).toToken = toIndex;
+    }
+
     public void AddOperation(string operation)
     {
         tokens.Add(new TokenOperation(operation));
@@ -175,10 +211,17 @@ public class CompiledCode
         tokens.Add(new TokenVar(name, def, TokenType.SetGlobalVar));
     }
 
+    public void AddCall(FuncDef def)
+    {
+        tokens.Add(new TokenCall(def.CodeIndex));
+    }
+    //public void AddPrepareCall() => tokens.Add(new Token(TokenType.PrepareCall));
+
     public void AddInt(int value) => tokens.Add(new TokenTypedValue(value));
     public void AddDouble(double value) => tokens.Add(new TokenTypedValue(value));
     public void AddString(string value) => tokens.Add(new TokenTypedValue(value));
     public void AddBool(bool value) => tokens.Add(new TokenTypedValue(value));
+
 
     /**
     public void AddString(string value)

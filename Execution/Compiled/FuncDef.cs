@@ -2,6 +2,8 @@
 
 public class FuncDef
 {
+    public int CodeIndex { get; set; }
+
     public Dictionary<string, VariableDef> localVariables = new();
 
     public FuncDef()
