@@ -7,18 +7,7 @@ public abstract class VariableDef
 public class GlobalVariableDef : VariableDef
 {
     private TypedValue typedValue;
-    //public override TypedValue TypedValue { get => typedValue; set => typedValue = value; }
-    public override TypedValue VarValue
-    {
-        get
-        {
-            return typedValue;
-        }
-        set
-        {
-            typedValue = value;
-        }
-    }
+    public override TypedValue VarValue { get => typedValue; set => typedValue = value; }
 }
 
 public class LocalVariableDef : VariableDef

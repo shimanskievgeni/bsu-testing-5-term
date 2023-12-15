@@ -82,54 +82,43 @@ public class Analyzer
         error = null;
         _funcName = null;
 
-        bool f;
-
-        // declare global vars
-        do
-        {
-            f = ParseVar();
-        }
-        while (f);
+        while (ParseVar()) ; // declare global vars
 
         var codeIndexBeforeFunction = CompiledCode.AddUndefinedGoto(); // to bypass functions 
-        
-        do
-        {
-            f = ParseFunction();
-        }
-        while (f);
+
+        while (ParseFunction());
 
         // top level statements
         CompiledCode.DefineGotoHereFrom(codeIndexBeforeFunction);
 
+        while (ParseVar()) ; // again declare global vars
         ParseOperators();
 
-        f = EndCode();
-        if (!f)
+        if (!EndCode())
         {
-            StopOnError("expected End Of Code."); return false;
+            StopOnError("Expected end of code."); return false;
         }
-        return f;
+        return true;
     }
 
     public bool ParseVar()
     {
-        if (!ParseWordAndBlank("var"))
+        if (!ParseKeyWord("var"))
         {
             return false;
         }
 
         do
         {
-            if (!ParseAssigment(true))
+            if (!ParseAssigment(isVarDeclare: true))
             {
-                StopOnError("qqqError"); return false;
+                StopOnError("Invalid variable declaration."); return false;
             }
         } while (ParseChar(','));
 
         if (!ParseChar(';'))
         {
-            StopOnError("qqqError"); return false;
+            StopOnError("Expected ';'"); return false;
         }
         return true;
     }
@@ -207,13 +196,15 @@ public class Analyzer
         return true;
     }
 
-    public bool ParseBlock()
+    public bool ParseBlock(bool isVarsPossible = false)
     {
         if (!ParseChar('{'))
         {
             StopOnError("Expected '{'"); return false;
         }
 
+        if (isVarsPossible)
+            while (ParseVar());
         ParseOperators();
 
         if (!ParseChar('}'))
@@ -243,7 +234,6 @@ public class Analyzer
             {
                 f = ParseAssigment();
             }
-
         }
         while (f);
 
@@ -254,7 +244,6 @@ public class Analyzer
 
     private bool ParseFunction()
     {
-        // if (!ParseWordAndBlank("function"))
         if (!ParseKeyWord("function"))
         {
             return false;
@@ -276,12 +265,13 @@ public class Analyzer
             StopOnError($"Cannot add function {funcName}"); return false;  
         }
 
-
         ParseFunctionHeader();
 
         _funcDef.CodeIndex = CompiledCode.LastIndex + 1;
+        
+        ParseBlock(isVarsPossible: true);
 
-        ParseBlock();
+        functions[funcName].SetStackIndexForLocalVars();
 
         _funcName = null;
 

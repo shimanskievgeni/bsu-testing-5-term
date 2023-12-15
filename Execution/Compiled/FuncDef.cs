@@ -1,4 +1,6 @@
-﻿namespace Execution.Compiled;
+﻿using System;
+
+namespace Execution.Compiled;
 
 public class FuncDef
 {
@@ -33,4 +35,14 @@ public class FuncDef
     {
         return AddLocalVariable(name, true);
     }
+    public void SetStackIndexForLocalVars() // call this after full function parsing
+    {
+        foreach (var l in localVariables.Values.Cast<LocalVariableDef>())
+        {
+            l.stackIndex = localVariables.Count - l.index;
+            if (l.isParameter)
+                ++l.stackIndex;
+        }
+    }
+
 }
