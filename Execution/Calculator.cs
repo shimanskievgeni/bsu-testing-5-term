@@ -57,6 +57,9 @@ public class Calculator
         Stack<string> operators = new();
 
         string suspect;// = "";
+
+        TypedValue retval = new(); // struct
+
         int ip = 0; // instruction pointer
 
         while (ip < compiledCode.tokens.Count)
@@ -72,7 +75,10 @@ public class Calculator
                 if (operators.Count > 0 && operators.Peek() == "PrepareCall")
                 {
                     operators.Pop();
+                    var retvaltoken = (TokenTypedValue)operands.Pop();
                     ip = ((TokenTypedValue)operands.Pop()).typedValue.intValue;
+                    operands.Push(retvaltoken);
+                    continue;
                 }
                 else { 
                     break; // top level return;
@@ -108,14 +114,19 @@ public class Calculator
                 continue;
             }
 
-            if (suspect == "(")
+            if (suspect == "(" || suspect == "PrepareCall")
             {
                 operators.Push(suspect);
             }
-            else if (token.Type == TokenType.TokenTypedValue // TokenType.Constant
-                  || token.Type == TokenType.GetGlobalVarValue)
+            else if (token.Type == TokenType.TokenTypedValue) 
             {
                 operands.Push(token);
+            }
+            else if (token.Type == TokenType.GetGlobalVarValue)
+            {
+                // for correct calc with side effects we replace ref with value
+                var v = GetTypedValue(token, operands); 
+                operands.Push(new TokenTypedValue(v)); 
             }
             else if (suspect == ")")
             {
@@ -152,7 +163,7 @@ public class Calculator
             throw new InvalidOperationException($"operators stack is not empty at the end: {op}");
         }
 
-        TypedValue retval = new(); // struct
+        //TypedValue retval = new(); // struct
         // TokenTypedValue tokenretval;
 
         if (operands.Count != 0)

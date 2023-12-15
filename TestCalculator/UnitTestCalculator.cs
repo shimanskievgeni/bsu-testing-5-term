@@ -197,7 +197,112 @@ public class Tests
               }
               return 100; 
               """, 100)]
+
+    [TestCase("""
+              var x = 11, y=22;
+              var z = 333;
+              function f1()
+              {
+                x = 1;
+                return 5; 
+              }
+              function f2()
+              {
+                x = 2;
+                return 15; 
+              }
+              return x + y + z; 
+              """, 366)]
+    [TestCase("""
+              var x = 7;
+              function f1()
+              {
+                return 5; 
+              }
+              x = f1() + f1();
+              return x; 
+              """, 10)]
+    [TestCase("""
+              var x = 7;
+              function f1()
+              {
+                return 5; 
+              }
+              x = f1() + f1()*f1();
+              return x; 
+              """, 30)]
+    [TestCase("""
+              var x = 7;
+              function f1()
+              {
+                return 5; 
+              }
+              x = f1() * f1() - f1();
+              return x; 
+              """, 20)]
+    [TestCase("""
+              var x = 7;
+              function f1()
+              {
+                x = 1;
+                return 5; 
+              }
+              x = f1();
+              return x; 
+              """, 5)]
+    [TestCase("""
+              var x = 11;
+              function f1()
+              {
+                x = 1;
+                return 5; 
+              }
+              return x + f1(); // !! 1:f1(x=1) = 5    2:5 + x = 6
+              """, 16)]
+    [TestCase("""
+              var x = 11;
+              function f1()
+              {
+                x = 1;
+                return 5; 
+              }
+              return (x) + f1(); // !! (x)  - x is TokenVar: ref, not value
+              """, 16)]
+    [TestCase("""
+              var x = 11;
+              function f1()
+              {
+                x = 1;
+                return 5; 
+              }
+              return (x+0) + f1(); // !! (x+0)  - now value
+              """, 16)]
+    [TestCase("""
+              var x = 11;
+              function f1()
+              {
+                x = 1;
+                return 5; 
+              }
+              return (x*1) + f1(); // !! 1:(x*1) = 11  2:f1()  3:5 + 11 = 16
+              """, 16)]
     public void TestExecFunc(string expression, int expected)
+    {
+        TypedValue? actual = Execution.Exec(expression);
+        var actualInt = actual?.intValue;
+
+        Assert.That(actualInt, Is.EqualTo(expected));
+    }
+
+
+    [TestCase("""
+              function f(x, y)
+              {
+                return x + y; 
+              }
+              return f(20, 30);
+              """, 50)]
+    public void TestExecFuncParam(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
         var actualInt = actual?.intValue;

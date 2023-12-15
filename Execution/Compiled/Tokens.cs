@@ -191,9 +191,13 @@ public class CompiledCode
         AddGotoIf(-1); // -1 just placeholder
         return LastIndex;
     }
-    public void DefineGoto(int fromIndex, int toIndex) 
+    public void DefineGoto(int fromIndex, int toIndex)
     {
         ((TokenGoto)(tokens[fromIndex])).toToken = toIndex;
+    }
+    public void DefineGotoHereFrom(int fromIndex)
+    {
+        ((TokenGoto)(tokens[fromIndex])).toToken = LastIndex + 1;
     }
 
     public void AddOperation(string operation)

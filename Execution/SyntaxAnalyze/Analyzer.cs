@@ -16,6 +16,7 @@ public class Analyzer
     private readonly Dictionary<string, VariableDef> variables = new();
     private readonly Dictionary<string, FuncDef> functions = new();
     private string? _funcName;
+    private FuncDef? _funcDef;
 
     private string? error;
     public string? Error { get => error; }
@@ -90,7 +91,7 @@ public class Analyzer
         }
         while (f);
 
-        var codeIndexBeforeFunction = CompiledCode.AddUndefinedGoto();
+        var codeIndexBeforeFunction = CompiledCode.AddUndefinedGoto(); // to bypass functions 
         
         do
         {
@@ -99,7 +100,7 @@ public class Analyzer
         while (f);
 
         // top level statements
-        CompiledCode.DefineGoto(codeIndexBeforeFunction, CompiledCode.LastIndex + 1);
+        CompiledCode.DefineGotoHereFrom(codeIndexBeforeFunction);
 
         ParseOperators();
 
@@ -179,7 +180,7 @@ public class Analyzer
             }
         }
 
-        CompiledCode.DefineGoto(indexTokenToCorrect, CompiledCode.LastIndex + 1);
+        CompiledCode.DefineGotoHereFrom(indexTokenToCorrect);
 
         return true;
     }
@@ -200,11 +201,10 @@ public class Analyzer
 
         ParseBlock();
 
-        CompiledCode.DefineGoto(indexTokenToCorrect, CompiledCode.LastIndex + 2);
         CompiledCode.AddGoto(indexTokenStartWhile); // loop
+        CompiledCode.DefineGotoHereFrom(indexTokenToCorrect);
 
         return true;
-
     }
 
     public bool ParseBlock()
@@ -262,6 +262,8 @@ public class Analyzer
 
         ParseFunctionHeader();
 
+        _funcDef.CodeIndex = CompiledCode.LastIndex + 1;
+
         ParseBlock();
 
         _funcName = null;
@@ -288,9 +290,9 @@ public class Analyzer
             StopOnError("Expected '('"); return false;
         }
 
-        var funcDef = AddFunc(_funcName);
+        _funcDef = AddFunc(_funcName);
 
-        int argcount = 0;
+        int paramCount = 0;
         string? name;
 
         if (!ParseChar(')'))
@@ -300,24 +302,27 @@ public class Analyzer
                 name = ParseName();
                 if (name == null)
                 {
-                    StopOnError("Expected parameter name."); return false;
+                    StopOnError("Expected parameter name"); return false;
                 }
 
                 var def = AddFuncVar(name, funcName);
 
-                argcount++;
+                paramCount++;
 
             } while (ParseChar(','));
 
+            _funcDef.ParamCount = paramCount;
+
             if (!ParseChar(')'))
             {
-                StopOnError("Expected ')'."); return false;
+                StopOnError("Expected ')'"); return false;
             }
+
         }
         return true;
     }
 
-    private FuncDef? AddFunc(string name)
+    private FuncDef AddFunc(string name)
     {
         if (functions.TryGetValue(name, out FuncDef? def))
             return def;
@@ -326,7 +331,9 @@ public class Analyzer
         if (functions.TryAdd(name, def))
             return def;
         else
-            return null;
+        {
+            StopOnError(@"Cannot add function {name}"); return def;  //return null;
+        }
     }
 
     private FuncDef? GetFunc(string name)
@@ -362,6 +369,9 @@ public class Analyzer
         var localVars = functions[funcName].localVariables;  // functions.TryGetValue(funcName, out _);
 
         if (localVars.TryGetValue(name, out VariableDef? def))
+            return def;
+
+        if (variables.TryGetValue(name, out def)) // if not found local, find global
             return def;
 
         def = new LocalVariableDef();
@@ -770,35 +780,40 @@ public class Analyzer
         }
 
         CompiledCode.AddOperation("PrepareCall"); // just marker with priority -1
-        ParseArguments(name);
+        ParseArguments(name, def);
         CompiledCode.AddCall(def);
 
         return true;
     }
 
-    private bool ParseArguments(string funcName)
+    private bool ParseArguments(string funcName, FuncDef funcDef)
     {
         int argcount = 0;
 
-        while (!EndCode())
+        while (!EndCode() && CurrentChar() != ')')
         {
             ParseExpression();
             CompiledCode.AddEndOfExpression();
 
             argcount++;
 
-            // TO DO check argcount
-            //if (argcount !=)
-            //{
-            //    StopOnError("qqqError"); return false;
-            //}
+            if (argcount > funcDef.ParamCount)
+            {
+                StopOnError(@"Too many arguments for function {funcName}"); return false;
+            }
 
             if (!ParseChar(','))
             {
                 return false;
             }
         }
-        return false;
+
+        if (argcount < funcDef.ParamCount)
+        {
+            StopOnError(@"Too few arguments for function {funcName}"); return false;
+        }
+
+        return true;
     }
 
     private bool ParseChar(char symbol)
