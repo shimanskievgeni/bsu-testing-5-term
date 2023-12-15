@@ -359,6 +359,7 @@ public class Tests
     [TestCase("""
               var str1 = 'string1';
               var str2 = 'string2';
+              var str3;
               if str1 != str2 {
                 str3 = 'wtf?';
               }

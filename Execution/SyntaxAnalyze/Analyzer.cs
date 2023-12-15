@@ -594,7 +594,7 @@ public class Analyzer
         def = GetVar(name, _funcName);
         if (def == null)
         {
-            StopOnError($"Variable ia not declared: {name}"); return false;
+            StopOnError($"Variable is not declared: {name}"); return false;
         }
         CompiledCode.AddSetVar(name, def);
         return true;
