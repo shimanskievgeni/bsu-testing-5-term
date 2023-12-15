@@ -260,6 +260,23 @@ public class Analyzer
             return false;
         }
 
+        string? funcName = ParseName();
+        if (funcName == null)
+        {
+            StopOnError("Expected function name."); return false;
+        }
+        if (GetFunc(funcName) != null)
+        {
+            StopOnError($"Duplicated function name: {funcName}."); return false;
+        }
+        _funcName = funcName;
+        _funcDef = AddFunc(_funcName);
+        if (_funcDef == null)
+        {
+            StopOnError($"Cannot add function {funcName}"); return false;  
+        }
+
+
         ParseFunctionHeader();
 
         _funcDef.CodeIndex = CompiledCode.LastIndex + 1;
@@ -273,26 +290,10 @@ public class Analyzer
 
     private bool ParseFunctionHeader()
     {
-        string? funcName = ParseName();
-        if (funcName == null)
-        {
-            StopOnError("Expected function name."); return false;
-        }
-        if (GetFunc(funcName) != null) 
-        {
-            StopOnError(@"Duplicated function name: {name}."); return false;
-        }
-
-        _funcName = funcName;
-
         if (!ParseChar('('))
         {
             StopOnError("Expected '('"); return false;
         }
-
-        _funcDef = AddFunc(_funcName);
-
-        int paramCount = 0;
         string? name;
 
         if (!ParseChar(')'))
@@ -305,13 +306,14 @@ public class Analyzer
                     StopOnError("Expected parameter name"); return false;
                 }
 
-                var def = AddFuncVar(name, funcName);
-
-                paramCount++;
+                if (GetLocalVar(name, _funcName) != null)
+                {
+                    StopOnError($"Duplicated parameter name: {name}."); return false;
+                }
+                
+                AddParameterVar(name, _funcName??""); // ?? only for supress warning
 
             } while (ParseChar(','));
-
-            _funcDef.ParamCount = paramCount;
 
             if (!ParseChar(')'))
             {
@@ -322,7 +324,8 @@ public class Analyzer
         return true;
     }
 
-    private FuncDef AddFunc(string name)
+    //------------------------------------------
+    private FuncDef? AddFunc(string name)
     {
         if (functions.TryGetValue(name, out FuncDef? def))
             return def;
@@ -331,9 +334,7 @@ public class Analyzer
         if (functions.TryAdd(name, def))
             return def;
         else
-        {
-            StopOnError(@"Cannot add function {name}"); return def;  //return null;
-        }
+            return null;
     }
 
     private FuncDef? GetFunc(string name)
@@ -360,25 +361,18 @@ public class Analyzer
         }
         else
         {
-            return AddFuncVar(name, funcName);
+            return AddLocalVar(name, funcName);
         }
     }
 
-    private VariableDef? AddFuncVar(string name, string funcName)
+    private VariableDef? AddLocalVar(string name, string funcName)
     {
-        var localVars = functions[funcName].localVariables;  // functions.TryGetValue(funcName, out _);
+        return functions[funcName].AddLocalVariable(name);
+    }
 
-        if (localVars.TryGetValue(name, out VariableDef? def))
-            return def;
-
-        if (variables.TryGetValue(name, out def)) // if not found local, find global
-            return def;
-
-        def = new LocalVariableDef();
-        if (localVars.TryAdd(name, new LocalVariableDef()))
-            return def;
-        else
-            return null;
+    private VariableDef? AddParameterVar(string name, string funcName)
+    {
+        return functions[funcName].AddParameterVariable(name);
     }
 
     private VariableDef? GetVar(string name, string? funcName)
@@ -394,6 +388,17 @@ public class Analyzer
             return v;
         else
             return null;
+    }
+
+    private VariableDef? GetLocalVar(string name, string? funcName)
+    {
+        if (funcName != null)
+        {
+            var localVars = functions[funcName].localVariables;  // functions.TryGetValue(funcName, out _);
+            if (localVars.TryGetValue(name, out VariableDef? v))
+                return v;
+        }
+        return null;
     }
 
 
@@ -532,7 +537,7 @@ public class Analyzer
 
                 if (!EscapedSymbols.Contains(CurrentChar()))
                 {
-                    StopOnError(@"Symbol {CurrentChar()} cannot be escaped."); return false;
+                    StopOnError($"Symbol {CurrentChar()} cannot be escaped."); return false;
                 }
             }
             else if (CurrentChar() == '\'')
@@ -550,7 +555,7 @@ public class Analyzer
 
 
     // is used also in var declaration
-    private bool ParseAssigment(bool varOnly = false)
+    private bool ParseAssigment(bool isVarDeclare = false)
     {
         string? name = ParseName();
 
@@ -559,11 +564,11 @@ public class Analyzer
             return false;
         }
 
-        if (!ParseChar('='))
+        if (!ParseChar('=')) 
         {
-            if (varOnly)
+            if (isVarDeclare)
             {
-                AddVar(name, _funcName);
+                AddVar(name, _funcName); 
                 return true;
             }
             return false;
@@ -572,19 +577,26 @@ public class Analyzer
         ParseExpression();
         CompiledCode.AddEndOfExpression();
 
-        if (!varOnly && !ParseChar(';'))
+        if (!isVarDeclare && !ParseChar(';'))
         {
             StopOnError("Expected ';'"); return false;
         }
 
-        var def = AddVar(name, _funcName);
-        if (def != null)
-            CompiledCode.AddSetGlobalVar(name, def);
-        else
+        VariableDef? def;
+        if (isVarDeclare)
         {
-            StopOnError(@"Variable {name} is not found."); return false;
+            def = AddVar(name, _funcName);
+            if (def == null)
+            {
+                StopOnError($"Cannot declare variable: {name}"); return false;
+            }
         }
-
+        def = GetVar(name, _funcName);
+        if (def == null)
+        {
+            StopOnError($"Variable ia not declared: {name}"); return false;
+        }
+        CompiledCode.AddSetVar(name, def);
         return true;
     }
 
@@ -698,7 +710,7 @@ public class Analyzer
         //{
         //    if (!int.TryParse(str, out int intVal))
         //    {
-        //        StopOnError(@"Error on parsing number: {str} "); return false;
+        //        StopOnError($"Error on parsing number: {str} "); return false;
         //    }
         //    CompiledCode.AddInt(intVal);
         //    return true;
@@ -713,7 +725,7 @@ public class Analyzer
                     CompiledCode.AddDouble(doubleVal);
                 else
                 {
-                    StopOnError(@"Error on parsing double(?) number: {str} "); return false;
+                    StopOnError($"Error on parsing double(?) number: {str} "); return false;
                 }
             }
             else if (int.TryParse(str, out int intVal))
@@ -722,7 +734,7 @@ public class Analyzer
             }
             else
             {
-                StopOnError(@"Error on parsing int(?) number: {str} "); return false;
+                StopOnError($"Error on parsing int(?) number: {str} "); return false;
             }
             return true;
         }
@@ -762,10 +774,10 @@ public class Analyzer
 
         if (def == null)
         {
-            StopOnError(@"Undefined variable name: {name}."); return false;
+            StopOnError($"Undeclared variable name: {name}."); return false;
         }
 
-        CompiledCode.AddGetGlobalVarValue(name, def);
+        CompiledCode.AddGetVarValue(name, def);
 
         return true;
     }
@@ -776,7 +788,7 @@ public class Analyzer
 
         if (def == null)
         {
-            StopOnError(@"Undefined function name: {name}."); return false;
+            StopOnError($"Undefined function name: {name}."); return false;
         }
 
         CompiledCode.AddOperation("PrepareCall"); // just marker with priority -1
@@ -799,7 +811,7 @@ public class Analyzer
 
             if (argcount > funcDef.ParamCount)
             {
-                StopOnError(@"Too many arguments for function {funcName}"); return false;
+                StopOnError($"Too many arguments for function {funcName}"); return false;
             }
 
             if (!ParseChar(','))
@@ -810,7 +822,7 @@ public class Analyzer
 
         if (argcount < funcDef.ParamCount)
         {
-            StopOnError(@"Too few arguments for function {funcName}"); return false;
+            StopOnError($"Too few arguments for function {funcName}"); return false;
         }
 
         return true;

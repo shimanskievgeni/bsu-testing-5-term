@@ -8,24 +8,29 @@ public class FuncDef
 
     public FuncDef()
     {
-        Name = "Undefined";
+        //Name = ""; // "Undefined";
         ParamCount = 0;
     }
-
     public FuncDef(string name)
     {
         Name = name;
     }
+    public string? Name  {  set;  get;  }
+    public int ParamCount { set; get; }
+    public int LocalCount { get => localVariables.Count - ParamCount; }
 
-    public string Name
+    public VariableDef? AddLocalVariable(string name, bool isParameter = false)
     {
-        set;
-        get;
+        if (localVariables.ContainsKey(name))
+            return null;
+        var def = new LocalVariableDef(localVariables.Count, isParameter);
+        if (!localVariables.TryAdd(name, def))
+            return null;
+        if (isParameter) { ParamCount++; }
+        return def;
     }
-
-    public int ParamCount
+    public VariableDef? AddParameterVariable(string name)
     {
-        set;
-        get;
+        return AddLocalVariable(name, true);
     }
 }

@@ -15,9 +15,10 @@ public enum TokenType
     //ConstantDouble,
     //ConstantString,
     SetGlobalVar,
-    RefLocalVar,
+    SetLocalVar,
+    //RefLocalVar,
     GetGlobalVarValue,
-    ValueLocalVar,
+    GetLocalVarValue,
     Ret,
     Call,
     EndOfExpression, // needed as marker with priority 0 to evaluate operations in stack (...expression... {  } )
@@ -205,14 +206,37 @@ public class CompiledCode
         tokens.Add(new TokenOperation(operation));
     }
 
-    public void AddGetGlobalVarValue(string name, VariableDef def)
-    {
-        tokens.Add(new TokenVar(name, def, TokenType.GetGlobalVarValue));
-    }
+    //public void AddGetGlobalVarValue(string name, VariableDef def)
+    //{
+    //    tokens.Add(new TokenVar(name, def, TokenType.GetGlobalVarValue));
+    //}
 
-    public void AddSetGlobalVar(string name, VariableDef def)
+    //public void AddSetGlobalVar(string name, VariableDef def)
+    //{
+    //    tokens.Add(new TokenVar(name, def, TokenType.SetGlobalVar));
+    //}
+
+    //public void AddGetLocalVar(string name, VariableDef def)
+    //{
+    //    tokens.Add(new TokenVar(name, def, TokenType.GetLocalVarValue));
+    //}
+    //public void AddSetLocalVar(string name, VariableDef def)
+    //{
+    //    tokens.Add(new TokenVar(name, def, TokenType.SetLocalVar));
+    //}
+    public void AddGetVarValue(string name, VariableDef def)
     {
-        tokens.Add(new TokenVar(name, def, TokenType.SetGlobalVar));
+        if (def is GlobalVariableDef)
+            tokens.Add(new TokenVar(name, def, TokenType.GetGlobalVarValue));
+        else if (def is LocalVariableDef)
+            tokens.Add(new TokenVar(name, def, TokenType.GetLocalVarValue));
+    }
+    public void AddSetVar(string name, VariableDef def)
+    {
+        if (def is GlobalVariableDef)
+            tokens.Add(new TokenVar(name, def, TokenType.SetGlobalVar));
+        else if (def is LocalVariableDef)
+            tokens.Add(new TokenVar(name, def, TokenType.SetLocalVar));
     }
 
     public void AddCall(FuncDef def)
@@ -225,7 +249,6 @@ public class CompiledCode
     public void AddDouble(double value) => tokens.Add(new TokenTypedValue(value));
     public void AddString(string value) => tokens.Add(new TokenTypedValue(value));
     public void AddBool(bool value) => tokens.Add(new TokenTypedValue(value));
-
 
     /**
     public void AddString(string value)

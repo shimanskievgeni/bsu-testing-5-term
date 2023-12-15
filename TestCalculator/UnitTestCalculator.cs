@@ -75,7 +75,7 @@ public class Tests
         Assert.That(actualInt, Is.EqualTo(expected));
     }
 
-    [TestCase("x = 1;", 0)]
+    [TestCase("var x = 1;", 0)]
     [TestCase("return;", 0)]
     [TestCase("return 1;", 1)]
     [TestCase("return 1+1;", 2)]
@@ -102,38 +102,38 @@ public class Tests
                 else { return 22; }
               """, 22)]
     [TestCase("""
-              x = 1;
+              var x = 1;
               if x == 1 { return 100; }
                 else { return 500; }
               """, 100)]
     [TestCase("""
-              x = -1;
+              var x = -1;
               if (x == -1) { return 100; }
                 else { return 500; }
               """, 100)]
     [TestCase("""
-              x = 2;
+              var x = 2;
               if (x != 1) { return 100; }
                 else { return 500; }
               """, 100)]
     [TestCase("""
-              x = 2;
+              var x = 2;
               if x > 1 { return 100; }
                 else { return 500; }
               """, 100)]
     [TestCase("""
-              x = 2;
+              var x = 2;
               if x > 10 { return 100; }
                 else if (x > 100) { return 500; }
                 else if (x < 5)   { return 15; }
                 else  { return 99; }
               """, 15)]
     [TestCase("""
-              i = 2;
+              var i = 2;
               return i; 
               """, 2)]
     [TestCase("""
-              i = 0;
+              var i = 0;
               while i < 10 
               {
                 i = i + 1; 
@@ -141,8 +141,8 @@ public class Tests
               return i; 
               """, 10)]
     [TestCase("""
-              i = 0;
-              j = 2;
+              var i = 0;
+              var j = 2;
               while i < 10 && j <= 2 
               {
                 i = i + 1;
@@ -151,7 +151,7 @@ public class Tests
               return i+0; 
               """, 10)]
     [TestCase("""
-              i = 0;
+              var i = 0;
               while (i < 10)
               {
                 i = i + 1 - 2*0; 
@@ -159,7 +159,7 @@ public class Tests
               return i*100; 
               """, 1000)]
     [TestCase("""
-              i = 0;
+              var i = 0;
               while (i < 100)
               {
                 i = i + 1 - 2*0; 
@@ -170,7 +170,7 @@ public class Tests
               return 100; 
               """, 0)]
     [TestCase("""
-              i = 0;
+              var i = 0;
               while (i < 100)
               {
                 i = i + 1 - 2*0; 
@@ -312,14 +312,14 @@ public class Tests
 
 
     [TestCase("""
-              i = 2;
-              j = i + i * 1.0; // 4.0
-              k = i * j;       // 8.0
+              var i = 2;
+              var j = i + i * 1.0; // 4.0
+              var k = i * j;       // 8.0
               k = -k / (-k) * -(0-k);
               return k; // 8
               """, 8)]
     [TestCase("""
-              k = 8.0;
+              var k = 8.0;
               if k != 8 {
                 k = 11;
               }
@@ -346,43 +346,43 @@ public class Tests
     }
 
     [TestCase("""
-              str = 'this is string';
+              var str = 'this is string';
               return str;
               """, "this is string")]
     [TestCase("""
-              str = 'this is string';
+              var str = 'this is string';
               if str != 'this is string' {
                 str = 'wtf?';
               }
               return str;
               """, "this is string")]
     [TestCase("""
-              str1 = 'string1';
-              str2 = 'string2';
+              var str1 = 'string1';
+              var str2 = 'string2';
               if str1 != str2 {
                 str3 = 'wtf?';
               }
               return str1 + str2;
               """, "string1string2")]
     [TestCase("""
-              str1 = 'string';
-              str2 = 'string2';
+              var str1 = 'string';
+              var str2 = 'string2';
               if str2 == str1 + '2' {
                 return 'ok2';
               }
               return str1 + str2;
               """, "ok2")]
     [TestCase("""
-              str1 = 'string';
-              str2 = 'string2';
+              var str1 = 'string';
+              var str2 = 'string2';
               if str2 + '34' == str1 + '2' + '34' {
                 return 'ok234';
               }
               return str1 + str2;
               """, "ok234")]
     [TestCase("""
-              str1 = 'string1';
-              str2 = 'string2';
+              var str1 = 'string1';
+              var str2 = 'string2';
               return str1 + ' ' + str2;
               """, "string1 string2")]
     public void TestExecString(string expression, string expected)

@@ -1,38 +1,43 @@
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 using Execution.SyntaxAnalyze;
+using NUnit.Framework;
 
 namespace TestParser;
 
 public class Tests
 {
-    [TestCase("x=14+4;", true)]
+    [TestCase("var x=14+4;", true)]
     [TestCase(
         """
-        x=14+4;
+        var x;
+        var x=14+4;
         x=x;
         """
       , true)]
     [TestCase(
         """
-        x= 14 + 4;
-        y= x + 1;
-        z = 0;
-        z = 10;
+        var x=9;
+        var x= 14 + 4;
+        var y= x + 1;
+        var z = 0;
+        var z = 10;
         """
       , true)]
     [TestCase(
         """
-        x= 14 + 4;
-        y= x + 1;
-        z = 0;
+        var  x = 2*6/2;
+        var x= 14 + 4;
+        var y= x + 1;
+        var z = 0;
         z = 10;
         """
         , true)]
     [TestCase(
         """
-        x= 14 + 4;
-        y= x*(1+2/3) + 1;
+        var x=-1;
+        var x= 14 + 4;
+        var y= x*(1+2/3) + 1;
         """
         , true)]
     [TestCase(
@@ -66,6 +71,7 @@ public class Tests
         , true)]
     [TestCase(
         """
+        var x=1;
         function f(x,y)
         {
           x = y + 1;
@@ -113,12 +119,14 @@ public class Tests
         , true)]
     [TestCase(
         """
+        var varx=11;
         varx=1;
         """
         , true
         )]
     [TestCase(
         """
+        var x=11;
         if ( 1==1)
         {
         x=1;
@@ -126,6 +134,7 @@ public class Tests
         """, true)]
     [TestCase(
         """
+        var x=-1;
         if 1==1
         {
         x=1;
@@ -133,6 +142,7 @@ public class Tests
         """, true)]
     [TestCase(
         """
+        var x=-1;
         if 1==-1
         {
         x=11;
@@ -140,6 +150,9 @@ public class Tests
         """, true)]
     [TestCase(
         """
+        var 
+            x = -(1)
+            ;
         if 1==1
         {
          x=1;
@@ -151,6 +164,7 @@ public class Tests
         """, true)]
     [TestCase(
         """
+        var x=+1;
         if 1==1
         {
           x=1;
@@ -168,6 +182,7 @@ public class Tests
         """, true)]
     [TestCase(
         """
+        var x=+1;
         if 1==1
         {
         x=1;
@@ -179,12 +194,14 @@ public class Tests
         """, true)]
     [TestCase(
         """
+        var x=(+1);
         while (1==1){
         x=2;
         }
         """, true)]
     [TestCase(
         """
+        var x=+1;
         while (1==1){
         if(1==1){
         x=1;
@@ -194,6 +211,7 @@ public class Tests
         """, true)]
     [TestCase(
         """
+        var x=+(1);
         while (1==1){
          if(1==1){
         x=1;
@@ -202,7 +220,6 @@ public class Tests
         }
         }
         """, true)]
-
     public void ValidatesParse(string expression, bool expected)
 
     {
@@ -213,24 +230,26 @@ public class Tests
     }
     
     [TestCase(
-        "x= 'abc';"
+        "var x= 'abc';"
         , true)] 
     [TestCase(
         """
+        var x=1;
         x= 'bcd';
         x= 'abc';
         """
         , true)]
     [TestCase(
         """
+        var x=1;
         x= '';
         """
         , true)]
     [TestCase(
         """
-        x= 'bcd';
-        y= x + 'abc';
-        """,true)]
+        var x= 'bcd';
+        var y= x + 'abc';
+        """, true)]
     public void ValidatesParseSTR(string expression, bool expected)
     {
         var parser = new Analyzer(expression);
@@ -424,9 +443,6 @@ public class Tests
         }
         """
       )]
-
-
-
     public void ValidatesParseThrowException(string expression)
     {
         var parser = new Analyzer(expression);
@@ -475,7 +491,6 @@ public class Tests
     [TestCase("1+(+(1+1))-1", true)]
     [TestCase("1-(+(1+1))-1", true)]
     public void ValidatesExpression(string expression, bool expected)
-
     {
         var parser = new Analyzer(expression);
         bool actual = parser.IsValidExpression();
