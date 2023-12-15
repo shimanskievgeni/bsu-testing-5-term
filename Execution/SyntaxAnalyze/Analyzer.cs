@@ -357,7 +357,12 @@ public class Analyzer
 
     private VariableDef? AddLocalVar(string name, string funcName)
     {
-        return functions[funcName].AddLocalVariable(name);
+        var def = functions[funcName].AddLocalVariable(name);
+        if (def != null)
+        {
+            CompiledCode.AddSetVar(name, def);
+        }
+        return def;
     }
 
     private VariableDef? AddParameterVar(string name, string funcName)
@@ -548,17 +553,42 @@ public class Analyzer
     private bool ParseAssigment(bool isVarDeclare = false)
     {
         string? name = ParseName();
-
         if (name == null)
         {
             return false;
         }
 
+        VariableDef? def;
+        if (isVarDeclare)
+        {
+            if (_funcName != null)
+            {
+                def = functions[_funcName].localVariables[name];
+            }
+            else
+            {
+                def = variables[name];
+            }
+
+            if (def != null) 
+            {
+                StopOnError($"Variable already declared: {name}"); return false;
+            }
+
+            def = AddVar(name, _funcName);
+                if (def == null)
+                {
+                    StopOnError($"Cannot declare variable: {name}"); return false;
+                }
+            }
+        }
+
+
         if (!ParseChar('=')) 
         {
             if (isVarDeclare)
             {
-                AddVar(name, _funcName); 
+                AddVar(name, _funcName); // declaration w/o assignment
                 return true;
             }
             return false;
@@ -572,7 +602,6 @@ public class Analyzer
             StopOnError("Expected ';'"); return false;
         }
 
-        VariableDef? def;
         if (isVarDeclare)
         {
             def = AddVar(name, _funcName);
@@ -582,7 +611,7 @@ public class Analyzer
             }
         }
         def = GetVar(name, _funcName);
-        if (def == null)
+        if (def == null) // strict mode
         {
             StopOnError($"Variable is not declared: {name}"); return false;
         }

@@ -19,7 +19,9 @@ public class LocalVariableDef : VariableDef
 
     public LocalVariableDef(int Index, bool isParameter)  { this.index = Index; this.isParameter = isParameter; }
         
-    private TypedValue GetLocalVarValue() { return new TypedValue(); }
+    private TypedValue GetLocalVarValue() { 
+        return new TypedValue(); 
+    }
     private void SetLocalVarValue(TypedValue typedValue) { return; }
 }
 
