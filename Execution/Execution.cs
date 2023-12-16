@@ -11,7 +11,9 @@ public static class Execution
         var parser = new Analyzer(source);
 
         if (!parser.Parse())
+        {
             return null;
+        }
         var calculator = new Calculator(parser.CompiledCode);
         return calculator.Compute();
     }
