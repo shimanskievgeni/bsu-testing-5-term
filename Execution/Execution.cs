@@ -10,7 +10,7 @@ public static class Execution
     {
         var parser = new Analyzer(source);
 
-        if (!parser.Parse())
+        if (!parser.Parse())  
         {
             return null;
         }
