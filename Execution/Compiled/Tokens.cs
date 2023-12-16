@@ -16,7 +16,7 @@ public enum TokenType
     //ConstantString,
     SetGlobalVar,
     SetLocalVar,
-    //RefLocalVar,
+    LocalVarDeclare,
     GetGlobalVarValue,
     GetLocalVarValue,
     Ret,
@@ -124,6 +124,16 @@ public class TokenCall : Token
     }
 }
 
+public class TokenRet : Token
+{
+    public readonly int paramCount; 
+
+    public TokenRet(int paramCount) : base(TokenType.Ret)
+    {
+        this.paramCount = paramCount;
+    }
+}
+
 public class TokenVar : Token
 {
     public readonly string name; // { get; private set; }
@@ -166,9 +176,9 @@ public class CompiledCode
     public int LastIndex { get => tokens.Count - 1; }
     //public int startIndex = -1; // undefined
 
-    public void AddReturn()
+    public void AddReturn(int paramCount)
     {
-        tokens.Add(new Token(TokenType.Ret));
+        tokens.Add(new TokenRet(paramCount));
     }
     public void AddEndOfExpression()
     {
@@ -238,6 +248,11 @@ public class CompiledCode
         else if (def is LocalVariableDef)
             tokens.Add(new TokenVar(name, def, TokenType.SetLocalVar));
     }
+    public void AddLocalVarDeclare(string name, VariableDef def)
+    {
+        tokens.Add(new Token(TokenType.LocalVarDeclare));
+    }
+
 
     public void AddCall(FuncDef def)
     {

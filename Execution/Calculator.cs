@@ -75,8 +75,11 @@ public class Calculator
                 if (operators.Count > 0 && operators.Peek() == "PrepareCall")
                 {
                     operators.Pop();
+                    var paramCount = ((TokenRet)token).paramCount;
                     var retvaltoken = (TokenTypedValue)operands.Pop();
                     ip = ((TokenTypedValue)operands.Pop()).typedValue.intValue;
+                    for (int i = 0; i < paramCount; i++)
+                        operands.Pop();
                     operands.Push(retvaltoken);
                     continue;
                 }
@@ -101,6 +104,12 @@ public class Calculator
             else if (token.Type == TokenType.SetGlobalVar)
             {
                 Assign(operands, (TokenVar)token);
+                ip++;
+                continue;
+            }
+            else if (token.Type == TokenType.LocalVarDeclare)
+            {
+                operands.Push(new TokenTypedValue()); // undefined
                 ip++;
                 continue;
             }

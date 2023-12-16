@@ -140,7 +140,7 @@ public class Analyzer
                 StopOnError("Expected ';' "); return false;
             }
         }
-        CompiledCode.AddReturn();
+        CompiledCode.AddReturn((_funcDef?.ParamCount)??0);
         return true;
     }
 
@@ -335,32 +335,20 @@ public class Analyzer
         else
             return null;
     }
-
-    private VariableDef? AddVar(string name, string? funcName = null)
+    private VariableDef? AddGlobalVarDeclare(string name)
     {
-        if (funcName == null)
-        {
-            if (variables.TryGetValue(name, out VariableDef? def))
-                return def;
-
-            def = new GlobalVariableDef();
-            if (variables.TryAdd(name, def))
-                return def;
-            else
-                return null;
-        }
+        var def = new GlobalVariableDef();
+        if (variables.TryAdd(name, def))
+            return def;
         else
-        {
-            return AddLocalVar(name, funcName);
-        }
+            return null;
     }
-
-    private VariableDef? AddLocalVar(string name, string funcName)
+    private VariableDef? AddLocalVarDeclare(string name, string funcName)
     {
         var def = functions[funcName].AddLocalVariable(name);
         if (def != null)
         {
-            CompiledCode.AddSetVar(name, def);
+            CompiledCode.AddLocalVarDeclare(name, def);
         }
         return def;
     }
@@ -563,35 +551,25 @@ public class Analyzer
         {
             if (_funcName != null)
             {
-                def = functions[_funcName].localVariables[name];
+                if (! functions[_funcName].localVariables.TryGetValue(name, out def))
+                    def = AddLocalVarDeclare(name, _funcName);
             }
             else
             {
-                def = variables[name];
+                if (! variables.TryGetValue(name, out def))
+                    def = AddGlobalVarDeclare(name);
             }
 
-            if (def != null) 
+            if (def == null)
             {
-                StopOnError($"Variable already declared: {name}"); return false;
+                StopOnError($"Cannot declare variable: {name}"); return false;
             }
 
-            def = AddVar(name, _funcName);
-                if (def == null)
-                {
-                    StopOnError($"Cannot declare variable: {name}"); return false;
-                }
-            }
         }
 
-
-        if (!ParseChar('=')) 
+        if (!ParseChar('='))
         {
-            if (isVarDeclare)
-            {
-                AddVar(name, _funcName); // declaration w/o assignment
-                return true;
-            }
-            return false;
+            return isVarDeclare;
         }
 
         ParseExpression();
@@ -602,14 +580,6 @@ public class Analyzer
             StopOnError("Expected ';'"); return false;
         }
 
-        if (isVarDeclare)
-        {
-            def = AddVar(name, _funcName);
-            if (def == null)
-            {
-                StopOnError($"Cannot declare variable: {name}"); return false;
-            }
-        }
         def = GetVar(name, _funcName);
         if (def == null) // strict mode
         {
