@@ -346,6 +346,40 @@ public class Tests
               }
               return f(20, 30);
               """, 550)]
+    [TestCase("""
+              var z = 7;
+              function f2(x)
+              {
+                return x*10; 
+              }
+              function f3(x, y)
+              {
+                var a=x;
+                var b=y+1;
+                var z= 100;
+                return a + b + f2(b); 
+              }
+              function f(x, y)
+              {
+                y = f3(x,y); // 20 + 31 + 310 = 361
+                x = f2(y + y) + f2(y) + 7; // 7220 + 3610 + 7
+                return x; 
+              }
+              return f(20, 30);
+              """, 10837)]
+    [TestCase("""
+              function factorial(x)
+              {
+                if (x <= 1)
+                {
+                    return 1;
+                }
+                else {
+                    return x * factorial(x - 1); 
+                }
+              }
+              return factorial(5);
+              """, 120)]
     public void TestExecFuncParam(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
