@@ -80,11 +80,13 @@ public class Calculator
             {
                 if (operators.Count > 0 && operators.Peek() == "PrepareCall")
                 {
-                    operators.Pop();
-                    var paramCount = ((TokenRet)token).paramCount;
+                    operators.Pop(); // remove PrepareCall
                     var retvaltoken = (TokenTypedValue)operands.Pop();
+                    for (int i = 0; i < ((TokenRet)token).localVarCount; i++)
+                        operands.Pop();
+                    bp = ((TokenTypedValue)operands.Pop()).typedValue.intValue;
                     ip = ((TokenTypedValue)operands.Pop()).typedValue.intValue;
-                    for (int i = 0; i < paramCount; i++)
+                    for (int i = 0; i < ((TokenRet)token).paramCount; i++)
                         operands.Pop();
                     operands.Push(retvaltoken);
                     continue;
@@ -93,6 +95,14 @@ public class Calculator
                 {
                     break; // top level return;
                 }
+            }
+            else if (token.Type == TokenType.Call)
+            {
+                operands.Push(new TokenTypedValue(ip + 1));
+                ip = ((TokenCall)token).toToken;
+                operands.Push(new TokenTypedValue(operands.Count));
+                bp = operands.Count;
+                continue;
             }
             else if (token.Type == TokenType.Goto)
             {
@@ -115,22 +125,22 @@ public class Calculator
                 ip++;
                 continue;
             }
-            else if (token.Type == TokenType.SetLocalVar)
-            {
-                var val = operands.Pop();
-                var tokenlocal = (TokenTypedValue)(
-                    operands.ElementAt((
-                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
-                        )));
-                tokenlocal.typedValue = GetTypedValue(token); 
-                ip++;
-                continue;
-            }
             else if (token.Type == TokenType.GetGlobalVarValue)
             {
                 // for correct calc with side effects we replace ref with value
                 var v = ((GlobalVariableDef)(((TokenVar)token).def)).VarValue;
                 operands.Push(new TokenTypedValue(v));
+                ip++;
+                continue;
+            }
+            else if (token.Type == TokenType.SetLocalVar)
+            {
+                var sourceToken = operands.Pop();
+                var tokenlocal = (TokenTypedValue)(
+                    operands.ElementAt((
+                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp) 
+                        )));
+                tokenlocal.typedValue = new(GetTypedValue(sourceToken)); 
                 ip++;
                 continue;
             }
@@ -153,13 +163,6 @@ public class Calculator
             else if (token.Type == TokenType.Operation)
             {
                 suspect = ((TokenOperation)token).Operation;
-            }
-            else if (token.Type == TokenType.Call)
-            {
-                operands.Push(new TokenTypedValue(ip + 1));
-                ip = ((TokenCall)token).toToken;
-                bp = operands.Count;
-                continue;
             }
 
             if (suspect == "(" || suspect == "PrepareCall")

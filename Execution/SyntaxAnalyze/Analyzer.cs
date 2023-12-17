@@ -16,7 +16,7 @@ public class Analyzer
     private readonly Dictionary<string, VariableDef> variables = new();
     private readonly Dictionary<string, FuncDef> functions = new();
     private string? _funcName;
-    private FuncDef? _funcDef;
+    //private FuncDef? _funcDef;
 
     private string? error;
     public string? Error { get => error; }
@@ -140,7 +140,8 @@ public class Analyzer
                 StopOnError("Expected ';' "); return false;
             }
         }
-        CompiledCode.AddReturn((_funcDef?.ParamCount)??0);
+        var def = GetFunc(_funcName ?? "");
+        CompiledCode.AddReturn((def?.ParamCount) ?? 0, (def?.LocalVarCount) ?? 0);
         return true;
     }
 
@@ -259,26 +260,25 @@ public class Analyzer
             StopOnError($"Duplicated function name: {funcName}."); return false;
         }
         _funcName = funcName;
-        _funcDef = AddFunc(_funcName);
-        if (_funcDef == null)
+        var funcDef = AddFunc(funcName);
+        if (funcDef == null)
         {
             StopOnError($"Cannot add function {funcName}"); return false;  
         }
 
-        ParseFunctionHeader();
+        ParseFunctionHeader(funcDef);
 
-        _funcDef.CodeIndex = CompiledCode.LastIndex + 1;
+        funcDef.CodeIndex = CompiledCode.LastIndex + 1;
         
         ParseBlock(isVarsPossible: true);
-
-        functions[funcName].SetStackIndexForLocalVars();
+        funcDef.SetStackIndexForLocalVars();
 
         _funcName = null;
 
         return true;
     }
 
-    private bool ParseFunctionHeader()
+    private bool ParseFunctionHeader(FuncDef funcDef)
     {
         if (!ParseChar('('))
         {
@@ -300,8 +300,8 @@ public class Analyzer
                 {
                     StopOnError($"Duplicated parameter name: {name}."); return false;
                 }
-                
-                AddParameterVar(name, _funcName??""); // ?? only for supress warning
+
+                funcDef.AddParameterVariable(name);
 
             } while (ParseChar(','));
 

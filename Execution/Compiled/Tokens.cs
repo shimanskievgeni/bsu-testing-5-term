@@ -126,11 +126,13 @@ public class TokenCall : Token
 
 public class TokenRet : Token
 {
-    public readonly int paramCount; 
+    public readonly int paramCount;
+    public readonly int localVarCount;
 
-    public TokenRet(int paramCount) : base(TokenType.Ret)
+    public TokenRet(int paramCount, int localVarCount) : base(TokenType.Ret)
     {
         this.paramCount = paramCount;
+        this.localVarCount = localVarCount;
     }
 }
 
@@ -202,9 +204,9 @@ public class CompiledCode
     public int LastIndex { get => tokens.Count - 1; }
     //public int startIndex = -1; // undefined
 
-    public void AddReturn(int paramCount)
+    public void AddReturn(int paramCount, int localVarCount)
     {
-        tokens.Add(new TokenRet(paramCount));
+        tokens.Add(new TokenRet(paramCount, localVarCount));
     }
     public void AddEndOfExpression()
     {
