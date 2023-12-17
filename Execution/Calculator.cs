@@ -100,8 +100,8 @@ public class Calculator
             {
                 operands.Push(new TokenTypedValue(ip + 1));
                 ip = ((TokenCall)token).toToken;
-                operands.Push(new TokenTypedValue(operands.Count));
-                bp = operands.Count;
+                operands.Push(new TokenTypedValue(bp)); // push bp;             //operands.Count););
+                bp = operands.Count;                    // mov  bp, sp
                 continue;
             }
             else if (token.Type == TokenType.Goto)

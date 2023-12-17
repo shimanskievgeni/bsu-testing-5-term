@@ -332,6 +332,20 @@ public class Tests
               }
               return f(20, 30);
               """, 420)]
+    [TestCase("""
+              var z;
+              function f2(x)
+              {
+                return x*10; 
+              }
+              function f(x, y)
+              {
+                var z = f2(5); // 50
+                z = z + f2(x) + f2(y); // 50 + 200 + 300
+                return z; 
+              }
+              return f(20, 30);
+              """, 550)]
     public void TestExecFuncParam(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
