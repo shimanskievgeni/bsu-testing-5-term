@@ -146,6 +146,32 @@ public class TokenVar : Token
     }
 }
 
+/**
+public class TokenGlobalVar : Token
+{
+    public readonly string name; // { get; private set; }
+    public readonly GlobalVariableDef def; // { get; private set; }
+
+    public TokenGlobalVar(string name, GlobalVariableDef def, TokenType type) : base(type)
+    {
+        this.name = name;
+        this.def = def;
+    }
+}
+
+public class TokenLocalVar : Token
+{
+    public readonly string name; // { get; private set; }
+    public readonly LocalVariableDef def; // { get; private set; }
+
+    public TokenLocalVar(string name, LocalVariableDef def, TokenType type) : base(type)
+    {
+        this.name = name;
+        this.def = def;
+    }
+}
+***/
+
 public class TokenFunc : Token
 {
     public readonly string name; // { get; private set; }

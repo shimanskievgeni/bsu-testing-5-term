@@ -38,7 +38,7 @@ public class FuncDef
     {
         foreach (var l in localVariables.Values.Cast<LocalVariableDef>())
         {
-            l.stackIndex = localVariables.Count - l.index;
+            l.stackIndex = localVariables.Count - l.index - 1;
             if (l.isParameter)
                 ++l.stackIndex;
         }

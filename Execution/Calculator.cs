@@ -21,19 +21,24 @@ public class Calculator
         this.compiledCode = compiledCode;
     }
 
-    private static void Assign(Stack<Token> operands, TokenVar token)
+    /****
+    private static void Assign(Stack<Token> operands, TokenGlobalVar token)
     {
-        var left = operands.Pop();
+        var val = operands.Pop();
 
-        token.def.VarValue = new(GetTypedValue(left, operands)); // struct, constructor new just set values
+        token.def.VarValue = new(GetTypedValue(val)); // struct, constructor new just set values
 
-        //token?.def.VarValue = GetTypedValue(left, operands); // struct, copy by value
+        //else if (tvar.Type == TokenType.GetLocalVarValue)
+        //{
+        //    var tokenlocal = (TokenTypedValue)(operands.ElementAt(((LocalVariableDef)(tvar.def)).stackIndex));
+        //    typedValue = tokenlocal.typedValue;
+        //}
 
-        //token?.def.TypedValue.CopyFrom(GetTypedValue(left, operands)); // struct, copy by value
-        //token?.def.typedValue.SetFrom((left as TokenConstantType));
+        // token.def.VarValue = new(GetTypedValue(val, operands)); // struct, constructor new just set values
     }
+    ****/
 
-    public static void ComputeOnTheTop(Stack<Token> operands, Stack<string> operators)
+    public static void ComputeOnTheTop(Stack<TokenTypedValue> operands, Stack<string> operators)
     {
         string op = operators.Pop();
 
@@ -53,7 +58,7 @@ public class Calculator
         if (compiledCode?.tokens == null)
             return null;
 
-        Stack<Token> operands = new();
+        Stack<TokenTypedValue> operands = new();
         Stack<string> operators = new();
 
         string suspect;// = "";
@@ -61,6 +66,7 @@ public class Calculator
         TypedValue retval = new(); // struct
 
         int ip = 0; // instruction pointer
+        int bp = 0; // base pointer
 
         while (ip < compiledCode.tokens.Count)
         {
@@ -83,7 +89,8 @@ public class Calculator
                     operands.Push(retvaltoken);
                     continue;
                 }
-                else { 
+                else
+                {
                     break; // top level return;
                 }
             }
@@ -103,7 +110,37 @@ public class Calculator
             }
             else if (token.Type == TokenType.SetGlobalVar)
             {
-                Assign(operands, (TokenVar)token);
+                var sourceToken = operands.Pop();
+                ((GlobalVariableDef)(((TokenVar)token).def)).VarValue = new(GetTypedValue(sourceToken)); // struct, constructor new just set values
+                ip++;
+                continue;
+            }
+            else if (token.Type == TokenType.SetLocalVar)
+            {
+                var val = operands.Pop();
+                var tokenlocal = (TokenTypedValue)(
+                    operands.ElementAt((
+                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
+                        )));
+                tokenlocal.typedValue = GetTypedValue(token); 
+                ip++;
+                continue;
+            }
+            else if (token.Type == TokenType.GetGlobalVarValue)
+            {
+                // for correct calc with side effects we replace ref with value
+                var v = ((GlobalVariableDef)(((TokenVar)token).def)).VarValue;
+                operands.Push(new TokenTypedValue(v));
+                ip++;
+                continue;
+            }
+            else if (token.Type == TokenType.GetLocalVarValue)
+            {
+                var tokenlocal = (TokenTypedValue)(
+                    operands.ElementAt((
+                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
+                        )));
+                operands.Push(new TokenTypedValue(tokenlocal.typedValue));
                 ip++;
                 continue;
             }
@@ -117,9 +154,11 @@ public class Calculator
             {
                 suspect = ((TokenOperation)token).Operation;
             }
-            else if (token.Type == TokenType.Call) {
-                operands.Push(new TokenTypedValue(ip + 1)); 
+            else if (token.Type == TokenType.Call)
+            {
+                operands.Push(new TokenTypedValue(ip + 1));
                 ip = ((TokenCall)token).toToken;
+                bp = operands.Count;
                 continue;
             }
 
@@ -129,13 +168,9 @@ public class Calculator
             }
             else if (token.Type == TokenType.TokenTypedValue) 
             {
-                operands.Push(token);
-            }
-            else if (token.Type == TokenType.GetGlobalVarValue)
-            {
-                // for correct calc with side effects we replace ref with value
-                var v = GetTypedValue(token, operands); 
-                operands.Push(new TokenTypedValue(v)); 
+                operands.Push((TokenTypedValue)token);
+                ip++;
+                continue;
             }
             else if (suspect == ")")
             {
@@ -177,7 +212,7 @@ public class Calculator
 
         if (operands.Count != 0)
         {
-            retval = GetTypedValue(operands.Pop(), operands);
+            retval = GetTypedValue(operands.Pop());
         }
         else
         {
@@ -200,32 +235,41 @@ public class Calculator
         return false;
     }
 
-    private static TypedValue GetTypedValue(Token token, Stack<Token> operands)
+    private static TypedValue GetTypedValue(Token token) //, Stack<Token> operands)
     {
+        /**
         TypedValue typedValue;
 
         if (token is TokenVar tvar)
         {
-            typedValue = tvar.def.VarValue;
+            if (tvar.Type == TokenType.GetGlobalVarValue)
+                typedValue = ((GlobalVariableDef)(tvar.def)).VarValue;
+            else if (tvar.Type == TokenType.GetLocalVarValue)
+            {
+                var tokenlocal = (TokenTypedValue)(operands.ElementAt(((LocalVariableDef)(tvar.def)).stackIndex));
+                typedValue = tokenlocal.typedValue;
+            }
         }
-        else if (token is TokenTypedValue tv)
+        else 
+        ***/
+        if (token is TokenTypedValue tv)
         {
-            typedValue = tv.typedValue;
+            return tv.typedValue;
         }
         else
         {
             throw new InvalidOperationException($"Invalid token type (it is not operand): {token.Type}. ");
         }
-        return typedValue;
+        //return typedValue;
     }
 
-    private static TokenTypedValue Operate(Token left, Token? right, string operation, Stack<Token> operands)
+    private static TokenTypedValue Operate(Token left, Token? right, string operation, Stack<TokenTypedValue> operands)
     {
-        TypedValue typedValue1 = GetTypedValue(left, operands);
+        TypedValue typedValue1 = GetTypedValue(left);
         TypedValue typedValue2;
         if (right != null)
         {
-            typedValue2 = GetTypedValue(right, operands);
+            typedValue2 = GetTypedValue(right);
         }
         else
         {
