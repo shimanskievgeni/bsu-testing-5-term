@@ -367,20 +367,114 @@ public class Tests
               }
               return f(20, 30);
               """, 10837)]
-    [TestCase("""
-              function factorial(x)
-              {
-                if (x <= 1)
-                {
-                    return 1;
-                }
-                else {
-                    return x * factorial(x - 1); 
-                }
-              }
-              return factorial(5);
-              """, 120)]
     public void TestExecFuncParam(string expression, int expected)
+    {
+        TypedValue? actual = Execution.Exec(expression);
+        var actualInt = actual?.intValue;
+
+        Assert.That(actualInt, Is.EqualTo(expected));
+    }
+
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+              return factorial(4); 
+              """, 24)] // 8!=40320 9!=362880 11!=39916800 12!=479001600 13!=6227020800 15!=1307674368000
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+              return factorial(8); 
+              """, 40320)] // 8!=40320 9!=362880 11!=39916800 12!=479001600 13!=6227020800 15!=1307674368000
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+              return factorial(12); 
+              """, 479001600)] // 8!=40320 9!=362880 11!=39916800 12!=479001600 13!=6227020800 15!=1307674368000
+    [TestCase("""
+              var n = 100000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = 1; 
+              }
+              return s;
+              """, 1, TestName = "Loop empty 100k")]
+    [TestCase("""
+              var n = 200000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = 1; 
+              }
+              return s;
+              """, 1, TestName = "Loop empty 200k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 100000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12! 100k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 200000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12! 200k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 100000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12!,12! 100k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 100000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+                s = factorial(12);
+                s = factorial(12);
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12!,12!,12!,12! 100k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 200000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12!,12! 200k")]
+    public void TestExecFactorial(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
         var actualInt = actual?.intValue;
