@@ -36,14 +36,12 @@ public class Token
 
 public class TokenTypedValue : Token // not OOP style
 {
-    public TypedValue typedValue = new TypedValue(); // struct, not object!
+    public TypedValue typedValue; // for struct = new(); if struct, not class!
 
-    public TokenTypedValue() : base(TokenType.TokenTypedValue) { }
-
-    public TokenTypedValue(TypedValue typedValue) : base(TokenType.TokenTypedValue)
-    {
-        this.typedValue = new(typedValue);
-    }
+    //public TokenTypedValue(TypedValue typedValue) : base(TokenType.TokenTypedValue)
+    //{
+    //    this.typedValue = new(typedValue);
+    //}
 
     public TokenTypedValue(int value) : base(TokenType.TokenTypedValue) => typedValue = new(value); 
     public TokenTypedValue(double value) : base(TokenType.TokenTypedValue) => typedValue = new(value);
