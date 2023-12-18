@@ -22,7 +22,8 @@ public enum TokenType
     Ret,
     Call,
     EndOfExpression, // needed as marker with priority 0 to evaluate operations in stack (...expression... {  } )
-    PrepareCall // needed as marker with priority = -10 to stop pop operation until return from function
+    PrepareCall, // needed as marker with priority = -10 to stop pop operation until return from function
+    PopOperand // to ignore not used return value
 }
 
 public class Token
@@ -207,6 +208,11 @@ public class CompiledCode
     public void AddReturn(int paramCount, int localVarCount)
     {
         tokens.Add(new TokenRet(paramCount, localVarCount));
+    }
+
+    public void AddPopOperand()
+    {
+        tokens.Add(new Token(TokenType.PopOperand));
     }
     public void AddEndOfExpression()
     {

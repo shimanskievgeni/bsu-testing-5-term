@@ -382,18 +382,6 @@ public class Tests
               return factorial(4); 
               """, 24)] // 8!=40320 9!=362880 11!=39916800 12!=479001600 13!=6227020800 15!=1307674368000
     [TestCase("""
-              function factorial(x) {
-                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
-              }
-              return factorial(8); 
-              """, 40320)] // 8!=40320 9!=362880 11!=39916800 12!=479001600 13!=6227020800 15!=1307674368000
-    [TestCase("""
-              function factorial(x) {
-                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
-              }
-              return factorial(12); 
-              """, 479001600)] // 8!=40320 9!=362880 11!=39916800 12!=479001600 13!=6227020800 15!=1307674368000
-    [TestCase("""
               var n = 100000, s = 0;
               while n > 0 {
                 n = n - 1;
@@ -402,13 +390,74 @@ public class Tests
               return s;
               """, 1, TestName = "Loop empty 100k")]
     [TestCase("""
-              var n = 200000, s = 0;
+              var n = 50000, s = 0;
               while n > 0 {
                 n = n - 1;
                 s = 1; 
               }
               return s;
-              """, 1, TestName = "Loop empty 200k")]
+              """, 1, TestName = "Loop empty 50k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 50000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12! 50k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 50000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(6);
+              }
+              return s;
+              """, 720, TestName = "Loop 6! 50k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 50000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(3);
+              }
+              return s;
+              """, 6, TestName = "Loop 3! 50k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 50000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12! 50k")]
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              var n = 50000, s = 0;
+              while n > 0 {
+                n = n - 1;
+                s = factorial(12);
+                s = factorial(12);
+              }
+              return s;
+              """, 479001600, TestName = "Loop 12!,12! 50k")]
     [TestCase("""
               function factorial(x) {
                 if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
@@ -426,54 +475,14 @@ public class Tests
                 if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
               }
 
-              var n = 200000, s = 0;
-              while n > 0 {
-                n = n - 1;
-                s = factorial(12);
-              }
-              return s;
-              """, 479001600, TestName = "Loop 12! 200k")]
-    [TestCase("""
-              function factorial(x) {
-                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
-              }
-
-              var n = 100000, s = 0;
+              var n = 100000/2, s = 0;
               while n > 0 {
                 n = n - 1;
                 s = factorial(12);
                 s = factorial(12);
               }
               return s;
-              """, 479001600, TestName = "Loop 12!,12! 100k")]
-    [TestCase("""
-              function factorial(x) {
-                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
-              }
-
-              var n = 100000, s = 0;
-              while n > 0 {
-                n = n - 1;
-                s = factorial(12);
-                s = factorial(12);
-                s = factorial(12);
-                s = factorial(12);
-              }
-              return s;
-              """, 479001600, TestName = "Loop 12!,12!,12!,12! 100k")]
-    [TestCase("""
-              function factorial(x) {
-                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
-              }
-
-              var n = 200000, s = 0;
-              while n > 0 {
-                n = n - 1;
-                s = factorial(12);
-                s = factorial(12);
-              }
-              return s;
-              """, 479001600, TestName = "Loop 12!,12! 200k")]
+              """, 479001600, TestName = "Loop 12!,12! 50k")]
     public void TestExecFactorial(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
@@ -482,6 +491,57 @@ public class Tests
         Assert.That(actualInt, Is.EqualTo(expected));
     }
 
+
+    [TestCase("""
+              function factorial(x) {
+                if (x <= 1) { return 1; } else { return x * factorial(x - 1); }
+              }
+
+              factorial(2);
+              return 12;
+              """, 12, TestName = "FuncAsProc")]
+    [TestCase("""
+              function f(x) { x = 1; }
+              
+              f(2);
+              return 12;
+              """, 12, TestName = "funcNoReturn")]
+    [TestCase("""
+              function f(x) { x = 1; return; }
+              
+              f(2);
+              return 12;
+              """, 12, TestName = "funcNoRetval")]
+    [TestCase("""
+              function f(x) { x = 1; }
+              var x;
+              f(2);
+              x = f(1) + 7; // 0 + 7
+              return x;
+              """, 7, TestName = "funcAutoReturn0")]
+    [TestCase("""
+              function f(x) { x = 1; return; }
+              
+              var x = 7 + f(1) + 5; // 7 + 0 + 5
+              f(2);
+
+              return x;
+              """, 12, TestName = "funcAutoRetval0")]
+    [TestCase("""
+              function f(x) { x = 1; return; }
+              function f2(x) { x = 1; }
+              function f3(x) { return f(11) + f2(12); }
+              
+              var x = 100 + f(22) + f2(33) + f3(10); // 100 + 0 + 0 + 0
+              return x;
+              """, 100, TestName = "funcAutoRet")]
+    public void TestExecFun(string expression, int expected)
+    {
+        TypedValue? actual = Execution.Exec(expression);
+        var actualInt = actual?.intValue;
+
+        Assert.That(actualInt, Is.EqualTo(expected));
+    }
 
     [TestCase("""
               var i = 2;

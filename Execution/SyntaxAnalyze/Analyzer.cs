@@ -140,6 +140,10 @@ public class Analyzer
                 StopOnError("Expected ';' "); return false;
             }
         }
+        else
+        {
+            CompiledCode.AddInt(0); // return 0 by default
+        }
         var def = GetFunc(_funcName ?? "");
         CompiledCode.AddReturn((def?.ParamCount) ?? 0, (def?.LocalVarCount) ?? 0);
         return true;
@@ -222,6 +226,7 @@ public class Analyzer
 
         do
         {
+            // lead keywords
             f = ParseReturn();
             if (!f)
             {
@@ -230,6 +235,12 @@ public class Analyzer
             if (!f)
             {
                 f = ParseWhile();
+            }
+
+            // lead any name
+            if (!f)
+            {
+                f = ParseProcedureCall();
             }
             if (!f)
             {
@@ -242,6 +253,32 @@ public class Analyzer
         return f;
     }
 
+    private bool ParseProcedureCall()
+    {
+        SkipBlanks();
+        var p1 = position;
+        string? name = ParseName();
+
+        if (name == null)
+        {
+            position = p1;
+            return false;
+        }
+
+        if (!ParseCall(name))
+        {
+            position = p1;
+            return false;
+        }
+
+        if (!ParseChar(';'))
+        {
+            StopOnError("Expected ';'."); return false;
+        }
+
+        CompiledCode.AddPopOperand(); // pop returned value
+        return true;
+    }
 
     private bool ParseFunction()
     {
@@ -271,7 +308,13 @@ public class Analyzer
         funcDef.CodeIndex = CompiledCode.LastIndex + 1;
         
         ParseBlock(isVarsPossible: true);
-        funcDef.SetStackIndexForLocalVars();
+
+        // return can be missing in use code, so should be added anyway
+        CompiledCode.AddInt(0); 
+        //CompiledCode.AddEndOfExpression();
+        CompiledCode.AddReturn((funcDef?.ParamCount) ?? 0, (funcDef?.LocalVarCount) ?? 0);
+
+        funcDef?.SetStackIndexForLocalVars();
 
         _funcName = null;
 
@@ -351,11 +394,6 @@ public class Analyzer
             CompiledCode.AddLocalVarDeclare(name, def);
         }
         return def;
-    }
-
-    private VariableDef? AddParameterVar(string name, string funcName)
-    {
-        return functions[funcName].AddParameterVariable(name);
     }
 
     private VariableDef? GetVar(string name, string? funcName)
@@ -744,18 +782,11 @@ public class Analyzer
 
         if (name == null)
         {
-            StopOnError("Exptected operand."); return false;
+            StopOnError("Expected operand."); return false;
         }
 
-        if (ParseChar('(')) // function call, not var
-        {
-            ParseCall(name);
-
-            if (!ParseChar(')'))
-            {
-                StopOnError("Expected ')'."); return false;
-            }
-
+        if (ParseCall(name)) 
+        { 
             return true;
         }
 
@@ -773,8 +804,12 @@ public class Analyzer
 
     public bool ParseCall(string name) 
     {
+        if (!ParseChar('(')) // function call, not var
+        {
+            return false;
+        }
+        
         var def = GetFunc(name);
-
         if (def == null)
         {
             StopOnError($"Undefined function name: {name}."); return false;
@@ -783,6 +818,11 @@ public class Analyzer
         CompiledCode.AddOperation("PrepareCall"); // just marker with priority -1
         ParseArguments(name, def);
         CompiledCode.AddCall(def);
+
+        if (!ParseChar(')'))
+        {
+            StopOnError("Expected ')'."); return false;
+        }
 
         return true;
     }

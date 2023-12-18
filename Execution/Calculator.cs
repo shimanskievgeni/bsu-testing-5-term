@@ -138,9 +138,9 @@ public class Calculator
                 var sourceToken = operands.Pop();
                 var tokenlocal = (TokenTypedValue)(
                     operands.ElementAt((
-                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp) 
+                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
                         )));
-                tokenlocal.typedValue = new(GetTypedValue(sourceToken)); 
+                tokenlocal.typedValue = new(GetTypedValue(sourceToken));
                 ip++;
                 continue;
             }
@@ -157,6 +157,12 @@ public class Calculator
             else if (token.Type == TokenType.LocalVarDeclare)
             {
                 operands.Push(new TokenTypedValue()); // undefined
+                ip++;
+                continue;
+            }
+            else if (token.Type == TokenType.PopOperand)
+            {
+                operands.Pop();
                 ip++;
                 continue;
             }
