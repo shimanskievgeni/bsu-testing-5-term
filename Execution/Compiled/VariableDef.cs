@@ -6,7 +6,8 @@ public abstract class VariableDef
 }
 public class GlobalVariableDef : VariableDef
 {
-    private TypedValue typedValue;
+    //private TypedValue typedValue = new();
+    public TypedValue typedValue = new();
     public  TypedValue VarValue { get => typedValue; set => typedValue = value; }
     //public override TypedValue VarValue { get => typedValue; set => typedValue = value; }
 }

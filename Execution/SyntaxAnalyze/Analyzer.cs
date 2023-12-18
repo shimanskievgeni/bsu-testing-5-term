@@ -311,7 +311,6 @@ public class Analyzer
 
         // return can be missing in use code, so should be added anyway
         CompiledCode.AddInt(0); 
-        //CompiledCode.AddEndOfExpression();
         CompiledCode.AddReturn((funcDef?.ParamCount) ?? 0, (funcDef?.LocalVarCount) ?? 0);
 
         funcDef?.SetStackIndexForLocalVars();

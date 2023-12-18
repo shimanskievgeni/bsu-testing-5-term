@@ -42,13 +42,13 @@ public class TokenTypedValue : Token // not OOP style
 
     public TokenTypedValue(TypedValue typedValue) : base(TokenType.TokenTypedValue)
     {
-        this.typedValue = typedValue;
+        this.typedValue = new(typedValue);
     }
 
-    public TokenTypedValue(int value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value); 
-    public TokenTypedValue(double value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value);
-    public TokenTypedValue(string value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value); 
-    public TokenTypedValue(bool value) : base(TokenType.TokenTypedValue) => typedValue.SetValue(value); 
+    public TokenTypedValue(int value) : base(TokenType.TokenTypedValue) => typedValue = new(value); 
+    public TokenTypedValue(double value) : base(TokenType.TokenTypedValue) => typedValue = new(value);
+    public TokenTypedValue(string value) : base(TokenType.TokenTypedValue) => typedValue = new(value); 
+    public TokenTypedValue(bool value) : base(TokenType.TokenTypedValue) => typedValue = new(value); 
 }
 
 /***
@@ -149,44 +149,6 @@ public class TokenVar : Token
     }
 }
 
-/**
-public class TokenGlobalVar : Token
-{
-    public readonly string name; // { get; private set; }
-    public readonly GlobalVariableDef def; // { get; private set; }
-
-    public TokenGlobalVar(string name, GlobalVariableDef def, TokenType type) : base(type)
-    {
-        this.name = name;
-        this.def = def;
-    }
-}
-
-public class TokenLocalVar : Token
-{
-    public readonly string name; // { get; private set; }
-    public readonly LocalVariableDef def; // { get; private set; }
-
-    public TokenLocalVar(string name, LocalVariableDef def, TokenType type) : base(type)
-    {
-        this.name = name;
-        this.def = def;
-    }
-}
-***/
-
-public class TokenFunc : Token
-{
-    public readonly string name; // { get; private set; }
-    public readonly FuncDef def; // { get; private set; }
-
-    public TokenFunc(string name, FuncDef def, TokenType type) : base(type)
-    {
-        this.name = name;
-        this.def = def;
-    }
-}
-
 public class TokenGoto : Token
 {
     //public readonly Token ToToken;
@@ -249,25 +211,6 @@ public class CompiledCode
     {
         tokens.Add(new TokenOperation(operation));
     }
-
-    //public void AddGetGlobalVarValue(string name, VariableDef def)
-    //{
-    //    tokens.Add(new TokenVar(name, def, TokenType.GetGlobalVarValue));
-    //}
-
-    //public void AddSetGlobalVar(string name, VariableDef def)
-    //{
-    //    tokens.Add(new TokenVar(name, def, TokenType.SetGlobalVar));
-    //}
-
-    //public void AddGetLocalVar(string name, VariableDef def)
-    //{
-    //    tokens.Add(new TokenVar(name, def, TokenType.GetLocalVarValue));
-    //}
-    //public void AddSetLocalVar(string name, VariableDef def)
-    //{
-    //    tokens.Add(new TokenVar(name, def, TokenType.SetLocalVar));
-    //}
     public void AddGetVarValue(string name, VariableDef def)
     {
         if (def is GlobalVariableDef)
@@ -287,41 +230,14 @@ public class CompiledCode
         tokens.Add(new Token(TokenType.LocalVarDeclare));
     }
 
-
     public void AddCall(FuncDef def)
     {
         tokens.Add(new TokenCall(def.CodeIndex));
     }
-    //public void AddPrepareCall() => tokens.Add(new Token(TokenType.PrepareCall));
-
+    
     public void AddInt(int value) => tokens.Add(new TokenTypedValue(value));
     public void AddDouble(double value) => tokens.Add(new TokenTypedValue(value));
     public void AddString(string value) => tokens.Add(new TokenTypedValue(value));
     public void AddBool(bool value) => tokens.Add(new TokenTypedValue(value));
-
-    /**
-    public void AddString(string value)
-    {
-        tokens.Add(new TokenConstant<string>(value, ExpressionType.Str));
-        //this.tokens.Add(new TokenString(value));
-    }
-
-    public void AddInt(int value)
-    {
-        tokens.Add(new TokenConstant<int>(value, ExpressionType.Int));
-        //this.tokens.Add(new TokenInt(value));
-    }
-
-    public void AddDouble(double value)
-    {
-        tokens.Add(new TokenConstant<double>(value, ExpressionType.Double));
-        //this.tokens.Add(new TokenDouble(value));
-    }
-    public void AddBool(bool value)
-    {
-        tokens.Add(new TokenConstant<bool>(value, ExpressionType.Bool));
-        //this.tokens.Add(new TokenBool(value));
-    }
-    **/
 }
 
