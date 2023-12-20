@@ -650,6 +650,28 @@ public class Tests
         Assert.That(actualString, Is.EqualTo(expected));
     }
 
+    [TestCase("""
+              var a[] = [10,20,30];
+              return a[1]; 
+              """, 20)]
+    [TestCase("""
+              var b[3] = [100,200,300];
+              return b[2]; 
+              """, 300)]
+    [TestCase("""
+              var a[] = [10,20,30];
+              var b[3] = [100,200,300];
+              a[2] = a[1] + b[2]           // 20 + 300 = 320
+              return b[0] * a[2];          // 100 * 320 = 32000
+              """, 32000)]
+    public void TestExecArrayInt(string expression, int expected)
+    {
+        TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
+        var actualString = actual?.intValue;
+
+        Assert.That(actualString, Is.EqualTo(expected));
+    }
+
     public static bool AlmostEquals(double x, double y, double tolerance)
     {
     // https://roundwide.com/equality-comparison-of-floating-point-numbers-in-csharp/
