@@ -667,9 +667,9 @@ public class Tests
     public void TestExecArrayInt(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
-        var actualString = actual?.intValue;
+        var actualRes = actual?.intValue;
 
-        Assert.That(actualString, Is.EqualTo(expected));
+        Assert.That(actualRes, Is.EqualTo(expected));
     }
 
     public static bool AlmostEquals(double x, double y, double tolerance)
