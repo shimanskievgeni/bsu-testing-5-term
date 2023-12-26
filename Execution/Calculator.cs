@@ -33,7 +33,7 @@ public class Calculator
     public bool StopOnError(string msg)
     {
         error = msg;
-        throw new CalculatorException();
+        throw new CalculatorException(msg);
     }
 
     public void LogError(string Error)
@@ -44,181 +44,177 @@ public class Calculator
 
     public TypedValue? Compute()
     {
-        try
-        {
-            return _Compute();
-        }
-        catch (CalculatorException)
-        {
-            LogError(Error ?? "");
-            return null;
-        }
-    }
-
-    private TypedValue? _Compute()
-    {
         if (compiledCode?.tokens == null)
             return null;
 
-        Stack<TypedValue> operands = new();
-        Stack<string> operators = new();
-
-        string suspect;// = "";
-
-        TypedValue retval; // = new(); // 
-
-        int ip = 0; // instruction pointer
-        int bp = 0; // base pointer
-
-        while (ip < compiledCode.tokens.Count)
+        try
         {
-            Token token = compiledCode.tokens[ip];
-            if (token == null)
-                return null;
 
-            suspect = "";
+            Stack<TypedValue> operands = new();
+            Stack<string> operators = new();
 
-            if (token.Type == TokenType.Ret)
+            string suspect;// = "";
+
+            TypedValue retval; // = new(); // 
+
+            int ip = 0; // instruction pointer
+            int bp = 0; // base pointer
+
+            while (ip < compiledCode.tokens.Count)
             {
-                if (operators.Count > 0 && operators.Peek() == "PrepareCall")
+                Token token = compiledCode.tokens[ip];
+                if (token == null)
+                    return null;
+
+                suspect = "";
+
+                if (token.Type == TokenType.Ret)
                 {
-                    operators.Pop(); // pop PrepareCall
-                    retval = operands.Pop();
-                    for (int i = 0; i < ((TokenRet)token).localVarCount; i++)
-                        operands.Pop();
-                    bp = operands.Pop().IntValue;
-                    ip = operands.Pop().IntValue;
-                    for (int i = 0; i < ((TokenRet)token).paramCount; i++)
-                        operands.Pop();
-                    operands.Push(retval);
+                    if (operators.Count > 0 && operators.Peek() == "PrepareCall")
+                    {
+                        operators.Pop(); // pop PrepareCall
+                        retval = operands.Pop();
+                        for (int i = 0; i < ((TokenRet)token).localVarCount; i++)
+                            operands.Pop();
+                        bp = operands.Pop().IntValue;
+                        ip = operands.Pop().IntValue;
+                        for (int i = 0; i < ((TokenRet)token).paramCount; i++)
+                            operands.Pop();
+                        operands.Push(retval);
+                        continue;
+                    }
+                    else
+                    {
+                        break; // top level return;
+                    }
+                }
+                else if (token.Type == TokenType.Call)
+                {
+                    operands.Push(new TypedValue(ip + 1));
+                    ip = ((TokenCall)token).toToken;
+                    operands.Push(new TypedValue(bp)); // push bp;             //operands.Count););
+                    bp = operands.Count;                    // mov  bp, sp
                     continue;
                 }
-                else
-                {
-                    break; // top level return;
-                }
-            }
-            else if (token.Type == TokenType.Call)
-            {
-                operands.Push(new TypedValue(ip + 1));
-                ip = ((TokenCall)token).toToken;
-                operands.Push(new TypedValue(bp)); // push bp;             //operands.Count););
-                bp = operands.Count;                    // mov  bp, sp
-                continue;
-            }
-            else if (token.Type == TokenType.Goto)
-            {
-                ip = ((TokenGoto)token).toToken;
-                continue;
-            }
-            else if (token.Type == TokenType.GotoIf)
-            {
-                var val1 = operands.Pop().BoolValue;
-                if (!val1)
+                else if (token.Type == TokenType.Goto)
                 {
                     ip = ((TokenGoto)token).toToken;
                     continue;
                 }
-            }
-            else if (token.Type == TokenType.SetGlobalVar)
-            {
-                var sourceVal = operands.Pop();
-                ((GlobalVariableDef)(((TokenVar)token).def)).VarValue.SetFrom(sourceVal);
-                //((GlobalVariableDef)(((TokenVar)token).def)).VarValue = new(sourceVal); // for struct, constructor new just set values
-                ip++;
-                continue;
-            }
-            else if (token.Type == TokenType.GetGlobalVarValue)
-            {
-                var v = ((GlobalVariableDef)(((TokenVar)token).def)).VarValue;
-                operands.Push(new(v)); // for correct calc with side effects we replace ref with value
-                ip++;
-                continue;
-            }
-            else if (token.Type == TokenType.SetLocalVar)
-            {
-                var sourceVal = operands.Pop();
-                var local = operands.ElementAt((
-                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
-                        ));
-                local.SetFrom(sourceVal);
-                ip++;
-                continue;
-            }
-            else if (token.Type == TokenType.GetLocalVarValue)
-            {
-                var local = operands.ElementAt((
-                        ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
-                        ));
-                operands.Push(new(local));// for correct calc with side effects we replace ref with value
-                ip++;
-                continue;
-            }
-            else if (token.Type == TokenType.LocalVarDeclare)
-            {
-                operands.Push(new TypedValue()); // undefined
-                ip++;
-                continue;
-            }
-            else if (token.Type == TokenType.PopOperand)
-            {
-                operands.Pop();
-                ip++;
-                continue;
-            }
-            else if (token.Type == TokenType.Operation)
-            {
-                suspect = ((TokenOperation)token).Operation;
-            }
-
-            if (suspect == "(" || suspect == "PrepareCall")
-            {
-                operators.Push(suspect);
-            }
-            else if (token.Type == TokenType.TokenTypedValue) 
-            {
-                operands.Push(GetTypedValue(token));
-                ip++;
-                continue;
-            }
-            else if (suspect == ")")
-            {
-                while (operators.Count != 0 && operators.Peek() != "(")
+                else if (token.Type == TokenType.GotoIf)
                 {
-                    ComputeOnTheTop(operands, operators);
+                    var val1 = operands.Pop().BoolValue;
+                    if (!val1)
+                    {
+                        ip = ((TokenGoto)token).toToken;
+                        continue;
+                    }
+                }
+                else if (token.Type == TokenType.SetGlobalVar)
+                {
+                    var sourceVal = operands.Pop();
+                    ((GlobalVariableDef)(((TokenVar)token).def)).VarValue.SetFrom(sourceVal);
+                    //((GlobalVariableDef)(((TokenVar)token).def)).VarValue = new(sourceVal); // for struct, constructor new just set values
+                    ip++;
+                    continue;
+                }
+                else if (token.Type == TokenType.GetGlobalVarValue)
+                {
+                    var v = ((GlobalVariableDef)(((TokenVar)token).def)).VarValue;
+                    operands.Push(new(v)); // for correct calc with side effects we replace ref with value
+                    ip++;
+                    continue;
+                }
+                else if (token.Type == TokenType.SetLocalVar)
+                {
+                    var sourceVal = operands.Pop();
+                    var local = operands.ElementAt((
+                            ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
+                            ));
+                    local.SetFrom(sourceVal);
+                    ip++;
+                    continue;
+                }
+                else if (token.Type == TokenType.GetLocalVarValue)
+                {
+                    var local = operands.ElementAt((
+                            ((LocalVariableDef)(((TokenVar)token).def)).stackIndex + (operands.Count - bp)
+                            ));
+                    operands.Push(new(local));// for correct calc with side effects we replace ref with value
+                    ip++;
+                    continue;
+                }
+                else if (token.Type == TokenType.LocalVarDeclare)
+                {
+                    operands.Push(new TypedValue()); // undefined
+                    ip++;
+                    continue;
+                }
+                else if (token.Type == TokenType.PopOperand)
+                {
+                    operands.Pop();
+                    ip++;
+                    continue;
+                }
+                else if (token.Type == TokenType.Operation)
+                {
+                    suspect = ((TokenOperation)token).Operation;
                 }
 
-                if (operators.Count != 0) operators.Pop();
-            }
-            else // EndOfExpression
-            {
-                var currentOperatorPriority = GetOperationPriority(suspect);
-
-                while (operators.Count != 0 && GetOperationPriority(operators.Peek()) >= currentOperatorPriority)
+                if (suspect == "(" || suspect == "PrepareCall")
                 {
-                    ComputeOnTheTop(operands, operators);
-                }
-
-                if (suspect != "")
                     operators.Push(suspect);
+                }
+                else if (token.Type == TokenType.TokenTypedValue)
+                {
+                    operands.Push(GetTypedValue(token));
+                    ip++;
+                    continue;
+                }
+                else if (suspect == ")")
+                {
+                    while (operators.Count != 0 && operators.Peek() != "(")
+                    {
+                        ComputeOnTheTop(operands, operators);
+                    }
+
+                    if (operators.Count != 0) operators.Pop();
+                }
+                else // EndOfExpression
+                {
+                    var currentOperatorPriority = GetOperationPriority(suspect);
+
+                    while (operators.Count != 0 && GetOperationPriority(operators.Peek()) >= currentOperatorPriority)
+                    {
+                        ComputeOnTheTop(operands, operators);
+                    }
+
+                    if (suspect != "")
+                        operators.Push(suspect);
+                }
+                ip++;
             }
-            ip++;
-        }
 
-        if (operands.Count != 0)
-        {
-            retval = operands.Pop();
-        }
-        else
-        {
-            retval = new(0); 
-        }
-        if (operands.Count > 1)
-        {
-            StopOnError($"operands stack is not empty at the end: ((op))");
-        }
+            if (operands.Count != 0)
+            {
+                retval = operands.Pop();
+            }
+            else
+            {
+                retval = new(0);
+            }
+            if (operands.Count > 1)
+            {
+                StopOnError($"operands stack is not empty at the end: ((op))");
+            }
 
-        return retval;
+            return retval;
+        }
+        catch (CalculatorException ex)
+        {
+            LogError(ex.Message ?? "");
+            return null;
+        }
     }
 
     public static void ComputeOnTheTop(Stack<TypedValue> operands, Stack<string> operators)
@@ -251,7 +247,7 @@ public class Calculator
         }
         else
         {
-            throw new InvalidOperationException($"Invalid token type (it is not operand): {token.Type}. ");
+            throw new CalculatorException($"Invalid token type (it is not operand): {token.Type}. ");
         }
     }
 
@@ -259,7 +255,8 @@ public class Calculator
     {
         var resultType = TypeResolver.ResultingOperationType(operation, typedValue1.type, typedValue2.type);
         if (resultType == TypeOfValue.Undefined)
-            throw new InvalidOperationException($"Incompatible types: {typedValue1.type} {typedValue2.type}. Operation: {operation} ");
+            throw new CalculatorException($"Incompatible types: {typedValue1.type} {typedValue2.type}. Operation: {operation} ");
+        //static  StopOnError($"Incompatible types: {typedValue1.type} {typedValue2.type}. Operation: {operation} ");
 
         bool err = false;
 
@@ -372,7 +369,7 @@ public class Calculator
 
         if (err)
         {
-            throw new InvalidOperationException($"Invalid operation: {operation} {typedValue1.type} {typedValue2.type} ");
+            throw new CalculatorException($"Invalid operation: {operation} {typedValue1.type} {typedValue2.type} ");
         }
 
         res.type = resultType;

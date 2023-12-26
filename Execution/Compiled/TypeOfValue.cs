@@ -65,7 +65,7 @@ public class TypedValue
         }
     }
 
-    public object? ObjectValue { get => objectValue; set => objectValue = value; }
+    //public object? ObjectValue { get => objectValue; set => objectValue = value; }
 
     public TypeOfValue type = TypeOfValue.Undefined;
 
@@ -83,11 +83,6 @@ public class TypedValue
     {
         this.type = source.type;
         this.objectValue = source.objectValue;
-
-        //this.IntValue = source.IntValue;
-        //this.DoubleValue = source.DoubleValue;
-        //this.StringValue = source.StringValue;
-        //this.BoolValue = source.BoolValue;
     }
 
     public TypedValue(int value)
