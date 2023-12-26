@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using static Execution.Calculator;
 
 namespace Execution.Compiled;
 
@@ -21,47 +22,64 @@ public enum TypeOfValue
 
 public class TypedValue
 {
-    private object? objectValue;
+    private object? _objectValue;
     public int IntValue
     {
-        get => (int)objectValue;
+        get
+        {
+            if (_objectValue != null) return (int)_objectValue;
+            else throw new CalculatorException($"Null IntValue get.");
+        }
         set
         {
             this.type = TypeOfValue.Int;
-            objectValue = value;
+            _objectValue = value;
         }
     }
     public double DoubleValue
     {
-        get => (double)objectValue;
+        get
+        {
+            if (_objectValue != null) return (double)_objectValue;
+            else throw new CalculatorException($"Null DoubleValue get.");
+        }
         set
         {
             this.type = TypeOfValue.Double;
-            objectValue = value;
+            _objectValue = value;
         }
     }
-    public string? StringValue { 
-        get => objectValue.ToString(); 
+    public string? StringValue {
+        get
+        {
+            if (_objectValue != null) return _objectValue.ToString();
+            else throw new CalculatorException($"Null StringValue get.");
+        }
+
         set
         {
             this.type = TypeOfValue.Str;
             if (value != null)
             {
-                objectValue = value;
+                _objectValue = value;
             }
             else
             {
                 this.type = TypeOfValue.Undefined;
-                //StopOnError($"Null string used");
+                throw new CalculatorException($"Null StringValue set.");
             }
         }
     }
     public bool BoolValue { 
-        get => (bool)objectValue;
+        get
+        {
+            if (_objectValue != null) return (bool)_objectValue;
+            else throw new CalculatorException($"Null BoolValue get.");
+        }
         set
         {
             this.type = TypeOfValue.Bool;
-            objectValue = value;
+            _objectValue = value;
         }
     }
 
@@ -82,7 +100,7 @@ public class TypedValue
     public void SetFrom(TypedValue source)
     {
         this.type = source.type;
-        this.objectValue = source.objectValue;
+        this._objectValue = source._objectValue;
     }
 
     public TypedValue(int value)
