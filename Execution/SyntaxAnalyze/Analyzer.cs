@@ -61,7 +61,6 @@ public class Analyzer
         }
     }
 
-
     public bool Parse()
     {
         try
@@ -74,7 +73,6 @@ public class Analyzer
             return false;
         }
     }
-
 
     public bool _Parse()
     {

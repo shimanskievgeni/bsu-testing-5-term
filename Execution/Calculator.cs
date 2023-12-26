@@ -6,6 +6,8 @@ using System.Xml.XPath;
 using System;
 using Execution.Compiled;
 using System.Reflection.Metadata.Ecma335;
+using static Execution.SyntaxAnalyze.Analyzer;
+using System.Linq.Expressions;
 
 namespace Execution;
 
@@ -16,27 +18,44 @@ public class Calculator
 
     public readonly CompiledCode compiledCode;
 
-    public Calculator(CompiledCode compiledCode)
+    internal class CalculatorException : ApplicationException
     {
-        this.compiledCode = compiledCode;
+        public CalculatorException() : base() { }
+        public CalculatorException(string message) : base(message) { }
+        public CalculatorException(string message, Exception inner) : base(message, inner) { }
     }
 
-    public static void ComputeOnTheTop(Stack<TypedValue> operands, Stack<string> operators)
+    public Calculator(CompiledCode compiledCode)
     {
-        string op = operators.Pop();
+        error = null;
+        this.compiledCode = compiledCode;
+    }
+    public bool StopOnError(string msg)
+    {
+        error = msg;
+        throw new CalculatorException();
+    }
 
-        TypedValue val2 = new();
-
-        if (!IsUnaryOperatioin(op))
-        {
-            val2 = operands.Pop();
-        }
-        var val1 = operands.Pop();
-
-        operands.Push(TypedValueOperate(val1, val2, op));
+    public void LogError(string Error)
+    {
+        Console.WriteLine("!!! Calculator error:");
+        Console.WriteLine(Error);
     }
 
     public TypedValue? Compute()
+    {
+        try
+        {
+            return _Compute();
+        }
+        catch (CalculatorException)
+        {
+            LogError(Error ?? "");
+            return null;
+        }
+    }
+
+    private TypedValue? _Compute()
     {
         if (compiledCode?.tokens == null)
             return null;
@@ -186,11 +205,6 @@ public class Calculator
             ip++;
         }
 
-        //while (operators.Count != 0) 
-        //{
-        //    ComputeOnTheTop(operands, operators);
-        //}
-
         if (operands.Count != 0)
         {
             retval = operands.Pop();
@@ -201,12 +215,26 @@ public class Calculator
         }
         if (operands.Count > 1)
         {
-            throw new InvalidOperationException($"operands stack is not empty at the end: ((op))");
+            StopOnError($"operands stack is not empty at the end: ((op))");
         }
 
         return retval;
     }
 
+    public static void ComputeOnTheTop(Stack<TypedValue> operands, Stack<string> operators)
+    {
+        string op = operators.Pop();
+
+        TypedValue val2 = new();
+
+        if (!IsUnaryOperatioin(op))
+        {
+            val2 = operands.Pop();
+        }
+        var val1 = operands.Pop();
+
+        operands.Push(TypedValueOperate(val1, val2, op));
+    }
 
     private static bool IsUnaryOperatioin(string operation)
     {
@@ -230,36 +258,36 @@ public class Calculator
     private static TypedValue TypedValueOperate(TypedValue typedValue1, TypedValue typedValue2, string operation)
     {
         var resultType = TypeResolver.ResultingOperationType(operation, typedValue1.type, typedValue2.type);
-        if (resultType == ExpressionType.Undefined)
+        if (resultType == TypeOfValue.Undefined)
             throw new InvalidOperationException($"Incompatible types: {typedValue1.type} {typedValue2.type}. Operation: {operation} ");
 
         bool err = false;
 
         TypedValue res = new();
 
-        if (typedValue1.type == ExpressionType.Double || typedValue2.type == ExpressionType.Double)
+        if (typedValue1.type == TypeOfValue.Double || typedValue2.type == TypeOfValue.Double)
         {
-            if (typedValue1.type == ExpressionType.Int)
+            if (typedValue1.type == TypeOfValue.Int)
             {
                 typedValue1.DoubleValue = typedValue1.IntValue;
             }
-            else if (typedValue2.type == ExpressionType.Int)
+            else if (typedValue2.type == TypeOfValue.Int)
             {
                 typedValue2.DoubleValue = typedValue2.IntValue;
             }
         }
 
-        if (resultType == ExpressionType.Bool)
+        if (resultType == TypeOfValue.Bool)
         {
-            if (operation == "!" && typedValue1.type == ExpressionType.Bool)
+            if (operation == "!" && typedValue1.type == TypeOfValue.Bool)
                 res.BoolValue = !typedValue1.BoolValue;
-            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Bool)
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == TypeOfValue.Bool)
             {
                 if (operation == "&&") res.BoolValue = typedValue1.BoolValue && typedValue2.BoolValue;
                 else if (operation == "||") res.BoolValue = typedValue1.BoolValue || typedValue2.BoolValue;
                 else err = true;
             }
-            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Int)
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == TypeOfValue.Int)
             {
                 if (operation == "==") res.BoolValue = typedValue1.IntValue == typedValue2.IntValue;
                 else if (operation == "!=") res.BoolValue = typedValue1.IntValue != typedValue2.IntValue;
@@ -269,7 +297,7 @@ public class Calculator
                 else if (operation == ">") res.BoolValue = typedValue1.IntValue > typedValue2.IntValue;
                 else err = true;
             }
-            else if (typedValue1.type == ExpressionType.Double || typedValue2.type == ExpressionType.Double)
+            else if (typedValue1.type == TypeOfValue.Double || typedValue2.type == TypeOfValue.Double)
             {
                 if (operation == "==") res.BoolValue = AlmostEquals(typedValue1.DoubleValue, typedValue2.DoubleValue, 1e-100);
                 else if (operation == "!=") res.BoolValue = typedValue1.DoubleValue != typedValue2.DoubleValue;
@@ -279,7 +307,7 @@ public class Calculator
                 else if (operation == ">") res.BoolValue = typedValue1.DoubleValue > typedValue2.DoubleValue;
                 else err = true;
             }
-            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Str)
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == TypeOfValue.Str)
             {
                 if (operation == "==") res.BoolValue = typedValue1.StringValue == typedValue2.StringValue;
                 else if (operation == "!=") res.BoolValue = typedValue1.StringValue != typedValue2.StringValue;
@@ -294,17 +322,17 @@ public class Calculator
                 err = true;
             }
         }
-        else if (resultType == ExpressionType.Int)
+        else if (resultType == TypeOfValue.Int)
         {
-            if (typedValue1.type == ExpressionType.Int && operation == "Unary-")
+            if (typedValue1.type == TypeOfValue.Int && operation == "Unary-")
             {
                 res.IntValue = -typedValue1.IntValue;
             }
-            else if (typedValue1.type == ExpressionType.Int && operation == "Unary+")
+            else if (typedValue1.type == TypeOfValue.Int && operation == "Unary+")
             {
                 res.IntValue = +typedValue1.IntValue;
             }
-            else if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Int)
+            else if (typedValue1.type == typedValue2.type && typedValue1.type == TypeOfValue.Int)
             {
                 if (operation == "+") res.IntValue = typedValue1.IntValue + typedValue2.IntValue;
                 else if (operation == "-") res.IntValue = typedValue1.IntValue - typedValue2.IntValue;
@@ -315,13 +343,13 @@ public class Calculator
             }
             else err = true;
         }
-        else if (resultType == ExpressionType.Double)
+        else if (resultType == TypeOfValue.Double)
         {
-            if (typedValue1.type == ExpressionType.Double && operation == "Unary-")
+            if (typedValue1.type == TypeOfValue.Double && operation == "Unary-")
             {
                 res.DoubleValue = -typedValue1.DoubleValue;
             }
-            else if (typedValue1.type == ExpressionType.Double && operation == "Unary+")
+            else if (typedValue1.type == TypeOfValue.Double && operation == "Unary+")
             {
                 res.DoubleValue = +typedValue1.DoubleValue;
             }
@@ -331,9 +359,9 @@ public class Calculator
             else if (operation == "/") res.DoubleValue = typedValue1.DoubleValue / typedValue2.DoubleValue;
             else err = true;
         }
-        else if (resultType == ExpressionType.Str)
+        else if (resultType == TypeOfValue.Str)
         {
-            if (typedValue1.type == typedValue2.type && typedValue1.type == ExpressionType.Str)
+            if (typedValue1.type == typedValue2.type && typedValue1.type == TypeOfValue.Str)
                 if (operation == "+") res.StringValue = typedValue1.StringValue + typedValue2.StringValue;
                 else err = true;
         }

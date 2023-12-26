@@ -73,28 +73,28 @@ public class TokenConstant<T> : TokenConstantType
 //public class TokenInt : TokenConstant
 //{
 //    public readonly int value;
-//    public TokenInt(int value) : base(ExpressionType.Int) => this.value = value; 
+//    public TokenInt(int value) : base(TypeOfValue.Int) => this.value = value; 
 //}
 
 //public class TokenDouble : TokenConstant
 //{
 //    public readonly double value;
 
-//    public TokenDouble(double value) : base(ExpressionType.Double) => this.value = value; 
+//    public TokenDouble(double value) : base(TypeOfValue.Double) => this.value = value; 
 //}
 
 //public class TokenString : TokenConstant
 //{
 //    public readonly string value;
 
-//    public TokenString(string value) : base(ExpressionType.Str) => this.value = value; 
+//    public TokenString(string value) : base(TypeOfValue.Str) => this.value = value; 
 //}
 
 //public class TokenBool : TokenConstant
 //{
 //    public readonly bool value;
 
-//    public TokenBool(bool value) : base(ExpressionType.Bool) => this.value = value;
+//    public TokenBool(bool value) : base(TypeOfValue.Bool) => this.value = value;
 //}
 //
 ****/

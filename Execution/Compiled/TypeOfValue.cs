@@ -2,7 +2,7 @@
 
 namespace Execution.Compiled;
 
-public enum ExpressionType
+public enum TypeOfValue
 {
     Undefined,
     Int,
@@ -21,13 +21,13 @@ public enum ExpressionType
 
 public class TypedValue
 {
-    public object? objectValue;
+    private object? objectValue;
     public int IntValue
     {
         get => (int)objectValue;
         set
         {
-            this.type = ExpressionType.Int;
+            this.type = TypeOfValue.Int;
             objectValue = value;
         }
     }
@@ -36,7 +36,7 @@ public class TypedValue
         get => (double)objectValue;
         set
         {
-            this.type = ExpressionType.Double;
+            this.type = TypeOfValue.Double;
             objectValue = value;
         }
     }
@@ -44,24 +44,34 @@ public class TypedValue
         get => objectValue.ToString(); 
         set
         {
-            this.type = ExpressionType.Str;
-            objectValue = value;
+            this.type = TypeOfValue.Str;
+            if (value != null)
+            {
+                objectValue = value;
+            }
+            else
+            {
+                this.type = TypeOfValue.Undefined;
+                //StopOnError($"Null string used");
+            }
         }
     }
     public bool BoolValue { 
         get => (bool)objectValue;
         set
         {
-            this.type = ExpressionType.Bool;
+            this.type = TypeOfValue.Bool;
             objectValue = value;
         }
     }
 
-    public ExpressionType type = ExpressionType.Undefined;
+    public object? ObjectValue { get => objectValue; set => objectValue = value; }
+
+    public TypeOfValue type = TypeOfValue.Undefined;
 
     public TypedValue()
     {
-        type = ExpressionType.Undefined;
+        type = TypeOfValue.Undefined;
     }
 
     public TypedValue(TypedValue source)
@@ -112,22 +122,22 @@ public class TypedValue
         if (token is TokenConstant<int> ti)
         {
             IntValue = ti.value;
-            type = ExpressionType.Int;
+            type = TypeOfValue.Int;
         }
         else if (token is TokenConstant<double> td)
         {
             DoubleValue = td.value;
-            type = ExpressionType.Double;
+            type = TypeOfValue.Double;
         }
         else if (token is TokenConstant<string> ts)
         {
             StringValue = ts.value;
-            type = ExpressionType.Str;
+            type = TypeOfValue.Str;
         }
         else if (token is TokenConstant<bool> tb)
         {
             BoolValue = tb.value;
-            type = ExpressionType.Bool;
+            type = TypeOfValue.Bool;
         }
     }
     ****/
@@ -135,9 +145,9 @@ public class TypedValue
 
 public static class TypeResolver
 {
-    public static ExpressionType ResultingOperationType(string operation, ExpressionType type1, ExpressionType type2)
+    public static TypeOfValue ResultingOperationType(string operation, TypeOfValue type1, TypeOfValue type2)
     {
-        if (type1 == ExpressionType.Int || type1 == ExpressionType.Double)
+        if (type1 == TypeOfValue.Int || type1 == TypeOfValue.Double)
         { 
             if (operation == "Unary-"
                 || operation == "Unary+"
@@ -145,10 +155,10 @@ public static class TypeResolver
             return type1;
         }
 
-        if (type1 == ExpressionType.Int && type2 == ExpressionType.Double)
-            type1 = ExpressionType.Double;
-        else if (type1 == ExpressionType.Double && type2 == ExpressionType.Int)
-            type2 = ExpressionType.Double;
+        if (type1 == TypeOfValue.Int && type2 == TypeOfValue.Double)
+            type1 = TypeOfValue.Double;
+        else if (type1 == TypeOfValue.Double && type2 == TypeOfValue.Int)
+            type2 = TypeOfValue.Double;
 
         if (type1 == type2)
         {
@@ -160,7 +170,7 @@ public static class TypeResolver
              || operation == ">"
                 )
             {
-                return ExpressionType.Bool;
+                return TypeOfValue.Bool;
             }
 
             if (operation == "+") // plus or string concat   
@@ -169,14 +179,14 @@ public static class TypeResolver
             }
         }
 
-        if (type1 == ExpressionType.Int || type1 == ExpressionType.Double) 
+        if (type1 == TypeOfValue.Int || type1 == TypeOfValue.Double) 
         {
             //if (operation == "++" || operation == "--")
             //{
             //    return type1;
             //}
 
-            if (type2 == ExpressionType.Int || type2 == ExpressionType.Double)
+            if (type2 == TypeOfValue.Int || type2 == TypeOfValue.Double)
             {
                 if (operation == "+"
                     || operation == "-"
@@ -184,27 +194,27 @@ public static class TypeResolver
                     || operation == "/"
                     )
                 {
-                    if (type1 == ExpressionType.Double || type2 == ExpressionType.Double)
-                        return ExpressionType.Double;
+                    if (type1 == TypeOfValue.Double || type2 == TypeOfValue.Double)
+                        return TypeOfValue.Double;
                     else
-                        return ExpressionType.Int;
+                        return TypeOfValue.Int;
                 }
 
                 if (operation == "%")
                 {
-                    if (type1 == ExpressionType.Int)
+                    if (type1 == TypeOfValue.Int)
                         return type1;
                 }
             }
         }
 
-        if (type1 == ExpressionType.Bool)
+        if (type1 == TypeOfValue.Bool)
         {
             if (operation == "!")
             {
                 return type1;
             }
-            if (type2 == ExpressionType.Bool)
+            if (type2 == TypeOfValue.Bool)
             {
                 if (operation == "&&" || operation == "||")
                 {
@@ -214,7 +224,7 @@ public static class TypeResolver
         }
 
         //StopOnError("qqqError");
-        return ExpressionType.Undefined;
+        return TypeOfValue.Undefined;
     }
 
 }
