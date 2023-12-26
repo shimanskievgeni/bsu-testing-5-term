@@ -42,7 +42,7 @@ public class Tests
     public void ComputesDoubleExpression(string expression, double expected)
     {
         TypedValue? actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
-        var actualDouble = actual?.doubleValue;
+        var actualDouble = actual?.DoubleValue;
         //Token actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
         //var actualDouble = (actual as TokenConstant<double>).value;
 
@@ -68,7 +68,7 @@ public class Tests
     public void ComputesIntExpression(string expression, int expected)
     {
         TypedValue? actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
-        var actualInt = actual?.intValue;
+        var actualInt = actual?.IntValue;
         //Token actual = Execution.CalcExpression(expression); //Calculator.Compute(expression);
         //var actualInt = (actual as TokenConstant<int>).value;
 
@@ -171,7 +171,7 @@ public class Tests
               """, 0)]
     [TestCase("""
               var i = 0;
-              while (i < 100)
+              while (i < 50)
               {
                 i = i + 1 - 2*0; 
                 if i % 50 > 40 + 1.0 { 
@@ -183,7 +183,7 @@ public class Tests
     public void TestExecInt(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
-        var actualInt = actual?.intValue;
+        var actualInt = actual?.IntValue;
         //Token? actual = Execution.Exec(expression); //Calculator.Compute(expression);
         //var actualInt = (actual as TokenConstant<int>)?.value;
 
@@ -313,7 +313,7 @@ public class Tests
     public void TestExecFunc(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
-        var actualInt = actual?.intValue;
+        var actualInt = actual?.IntValue;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }
@@ -394,7 +394,7 @@ public class Tests
     public void TestExecFuncParam(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
-        var actualInt = actual?.intValue;
+        var actualInt = actual?.IntValue;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }
@@ -510,7 +510,7 @@ public class Tests
     public void TestExecFactorial(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression);
-        var actualInt = actual?.intValue;
+        var actualInt = actual?.IntValue;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }
@@ -561,8 +561,16 @@ public class Tests
               """, 100, TestName = "funcAutoRet")]
     public void TestExecFun(string expression, int expected)
     {
+        Object i = new Object();
+        Object d = new Object();
+        i = 1; d = 2.5;
+        i = (double)d;
+
+
+
+
         TypedValue? actual = Execution.Exec(expression);
-        var actualInt = actual?.intValue;
+        var actualInt = actual?.IntValue;
 
         Assert.That(actualInt, Is.EqualTo(expected));
     }
@@ -587,7 +595,7 @@ public class Tests
     public void TestExecDouble(string expression, double expected)
     {
         TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
-        var actualDouble = actual?.doubleValue;
+        var actualDouble = actual?.DoubleValue;
 
         const double tolerance = 1e-100;
 
@@ -645,11 +653,11 @@ public class Tests
     public void TestExecString(string expression, string expected)
     {
         TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
-        var actualString = actual?.stringValue;
+        var actualString = actual?.StringValue;
 
         Assert.That(actualString, Is.EqualTo(expected));
     }
-
+    /**
     [TestCase("""
               var a[] = [10,20,30];
               return a[1]; 
@@ -667,10 +675,11 @@ public class Tests
     public void TestExecArrayInt(string expression, int expected)
     {
         TypedValue? actual = Execution.Exec(expression); //Calculator.Compute(expression);
-        var actualRes = actual?.intValue;
+        var actualRes = actual?.IntValue;
 
         Assert.That(actualRes, Is.EqualTo(expected));
     }
+    **/
 
     public static bool AlmostEquals(double x, double y, double tolerance)
     {

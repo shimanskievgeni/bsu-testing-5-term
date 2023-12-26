@@ -21,10 +21,41 @@ public enum ExpressionType
 
 public class TypedValue
 {
-    public int intValue;// = 0;
-    public double doubleValue;// = 0;
-    public string? stringValue;
-    public bool boolValue;// = false;
+    public object? objectValue;
+    public int IntValue
+    {
+        get => (int)objectValue;
+        set
+        {
+            this.type = ExpressionType.Int;
+            objectValue = value;
+        }
+    }
+    public double DoubleValue
+    {
+        get => (double)objectValue;
+        set
+        {
+            this.type = ExpressionType.Double;
+            objectValue = value;
+        }
+    }
+    public string? StringValue { 
+        get => objectValue.ToString(); 
+        set
+        {
+            this.type = ExpressionType.Str;
+            objectValue = value;
+        }
+    }
+    public bool BoolValue { 
+        get => (bool)objectValue;
+        set
+        {
+            this.type = ExpressionType.Bool;
+            objectValue = value;
+        }
+    }
 
     public ExpressionType type = ExpressionType.Undefined;
 
@@ -41,63 +72,61 @@ public class TypedValue
     public void SetFrom(TypedValue source)
     {
         this.type = source.type;
-        this.intValue = source.intValue;
-        this.doubleValue = source.doubleValue;
-        this.stringValue = source.stringValue;
-        this.boolValue = source.boolValue;
+        this.objectValue = source.objectValue;
+
+        //this.IntValue = source.IntValue;
+        //this.DoubleValue = source.DoubleValue;
+        //this.StringValue = source.StringValue;
+        //this.BoolValue = source.BoolValue;
     }
 
     public TypedValue(int value)
     {
-        this.intValue = value;
-        this.type = ExpressionType.Int;
+        this.IntValue = value;
     }
     public TypedValue(double value)
     {
-        this.doubleValue = value;
-        this.type = ExpressionType.Double;
+        this.DoubleValue = value;
     }
     public TypedValue(string value)
     {
-        this.stringValue = value;
-        this.type = ExpressionType.Str;
+        this.StringValue = value;
     }
     public TypedValue(bool value)
     {
-        this.boolValue = value;
-        this.type = ExpressionType.Bool;
+        this.BoolValue = value;
     }
 
     //public void CopyFrom(TypedValue source) // not for struct!!! use 'constructor' TypedValue(TypedValue source)
     //{
     //    this.type = source.type;
-    //    this.intValue = source.intValue;
-    //    this.doubleValue = source.doubleValue;
-    //    this.stringValue = source.stringValue;  
-    //    this.boolValue = source.boolValue;
+    //    this.IntValue = source.IntValue;
+    //    this.DoubleValue = source.DoubleValue;
+    //    this.StringValue = source.StringValue;  
+    //    this.BoolValue = source.BoolValue;
     //}
-    
+
     /****
     public void SetFrom(TokenConstantType token)
     {
         if (token is TokenConstant<int> ti)
         {
-            intValue = ti.value;
+            IntValue = ti.value;
             type = ExpressionType.Int;
         }
         else if (token is TokenConstant<double> td)
         {
-            doubleValue = td.value;
+            DoubleValue = td.value;
             type = ExpressionType.Double;
         }
         else if (token is TokenConstant<string> ts)
         {
-            stringValue = ts.value;
+            StringValue = ts.value;
             type = ExpressionType.Str;
         }
         else if (token is TokenConstant<bool> tb)
         {
-            boolValue = tb.value;
+            BoolValue = tb.value;
             type = ExpressionType.Bool;
         }
     }
