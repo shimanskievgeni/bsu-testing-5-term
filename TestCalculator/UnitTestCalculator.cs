@@ -689,7 +689,63 @@ public class Tests
         return diff <= tolerance ||
                diff <= Math.Max(Math.Abs(x), Math.Abs(y)) * tolerance;
     }
-    
+    private static IEnumerable<string> ArrayDoubleTestCases()
+{
+    yield return @"
+        var c[] = [1.1, 2.2, 3.3];
+        return c[1];
+    ";
+    yield return @"
+        var d[3] = [0.5, 1.5, 2.5];
+        return d[2];
+    ";
+    yield return @"
+        var e[] = [1.0, 2.0, 3.0];
+        var f[3] = [4.0, 5.0, 6.0];
+        e[2] = e[1] + f[2];       // 2.0 + 6.0 = 8.0
+        return f[0] * e[2];       // 4.0 * 8.0 = 32.0
+    ";
+}
+
+private static IEnumerable<string> BooleanTestCases()
+{
+    yield return @"
+        var a = 10;
+        var b = 20;
+        return a < b;
+    ";
+    yield return @"
+        var x = true;
+        var y = false;
+        return x || y;
+    ";
+    yield return @"
+        var p = true;
+        var q = false;
+        var r = true;
+        return (p && q) || r;     // (true && false) || true = true
+    ";
+}
+
+private static IEnumerable<string> StringTestCases()
+{
+    yield return @"
+        var str = 'Hello, ';
+        return str + 'World!';
+    ";
+    yield return @"
+        var str = 'Open';
+        if str != 'OpenAI' {
+            str = 'Closed';
+        }
+        return str;
+    ";
+    yield return @"
+        var str1 = 'Hello';
+        var str2 = 'World';
+        return str1 + ' ' + str2;
+    ";
+}
     //[Test, Category("Positive scenario")]
     //public void ComputesWithPriority()
     //{
